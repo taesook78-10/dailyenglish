@@ -9,7 +9,6 @@
   <link rel="apple-touch-icon" href="/dailyenglish/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/dailyenglish/icon-192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/dailyenglish/icon-192.png">
-
   <style>
   :root{ --bg:#0b1020; --card:#111a34; --ink:#e8eefc; --muted:#a7b3d6; --pri:#5b8cff; --good:#21d39b; --warn:#ffb454; --bad:#ff5c7a; --ring:#31457a; --shadow:0 12px 40px rgba(0,0,0,.35); --radius:18px; }
   *{box-sizing:border-box}
@@ -65,11 +64,13 @@
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:9999;}
   .practice .box{width:min(720px,94vw); background:#101733; border:1px solid var(--ring); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
   .practice .box h3{margin:0 0 10px; font-size:18px;}
-  .practice .ref{font-size:14px; color:#cfe0ff; margin:6px 0 10px}
-  .practice .trans{min-height:110px; padding:10px; border:1px solid var(--ring); border-radius:12px; background:#0f1731; font-size:15px; line-height:1.5; color:#eaf1ff; white-space:pre-wrap}
+  .practice .ref{font-size:14px; color:#cfe0ff; margin:6px 0 10px; white-space:pre-wrap}
   .practice .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
   .practice .result{margin-top:10px; padding:10px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
   .feedback{display:block; font-size:12px; color:#cfe0ff; opacity:.95}
+
+  /* 진단 배지 숨김 */
+  #diagSupport, #diagVoices { display:none !important; }
   </style>
 </head>
 <body>
@@ -110,7 +111,7 @@
             <div class="title" id="dayTitle">—</div>
           </div>
           <div class="kpi">
-            <div class="chip">평균 점수: <span class="score" id="avgScore">—</span></div>
+            <div class="chip">종합 점수: <span class="score" id="avgScore">—</span></div>
             <div class="chip">진행: <span id="progressText">0/3</span></div>
           </div>
         </div>
@@ -118,13 +119,13 @@
       </div>
 
       <div class="card">
-        <div class="hd"><h2>오늘의 목표</h2><div class="chip">임계치 80%+</div></div>
+        <div class="hd"><h2>오늘의 목표</h2><div class="chip">80점 이상 성공</div></div>
         <div class="body">
-          <div class="meter" title="전체 진행"><i id="meterBar"></i></div>
+          <div class="meter" title="듣기 진행(3문장)"><i id="meterBar"></i></div>
           <div style="height:10px"></div>
           <button class="btn pri" id="markDone" disabled>✔ 오늘 완료로 표시</button>
           <div style="height:12px"></div>
-          <div class="hint">세 문장을 모두 듣고(▶︎) 말한 뒤(●) 평균 80% 이상이면 완료 버튼이 활성화됩니다.</div>
+          <div class="hint">세 문장을 모두 듣고(▶︎) 나서 <b>3문장 연속 말하기</b>에서 80점 이상이면 완료할 수 있어요.</div>
           <div style="height:12px"></div>
           <div class="kpi">
             <div class="chip">연속일수: <b id="streak">0</b>일</div>
@@ -156,7 +157,7 @@
   </div>
 
 <script>
-// ===== 스토리지 유틸 =====
+// ===== 스토리지 =====
 const LS_USER='d3l_user', LS_PROGRESS='d3l_progress';
 function todayKey(){ const f = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}); return f.format(new Date()); }
 function loadUser(){ return JSON.parse(localStorage.getItem(LS_USER)||'{"ttsRate":1,"lang":"en-US","voiceURI":""}'); }
@@ -169,7 +170,7 @@ if(!prog._currentDay){ prog._currentDay=1; saveProg(prog); }
 if(!Array.isArray(prog._history)) { prog._history = []; saveProg(prog); }
 function computeDayFromStart(){ const start = new Date(prog._startedAt+'T00:00:00+09:00'); return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1)); }
 
-// ===== 제목/랜덤 문장 (영·한 템플릿) =====
+// ===== 데이터(제목/문장) =====
 const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
   'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
   'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
@@ -182,7 +183,6 @@ const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeti
   'Side Project','Coding Session','Design Draft','Feedback Round','Revision','Final Review','Presentation Day','Rest Day','Family Dinner','Friends Hangout',
   'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
 ];
-
 const L1 = [
   { en:(t)=>`I spent some time on ${t} today.`, ko:(t)=>`오늘 ${t}에 시간을 좀 썼어요.` },
   { en:(t)=>`I worked on ${t} a bit this morning.`, ko:(t)=>`오늘 아침에 ${t}를 조금 했어요.` },
@@ -204,16 +204,14 @@ const L3 = [
   { en:()=>`Small wins still count.`, ko:()=>`작은 성취도 의미 있어요.` },
   { en:()=>`Slow and steady works for me.`, ko:()=>`천천히 꾸준히가 제 스타일이에요.` }
 ];
-
 function pickIdx(a){ return Math.floor(Math.random()*a.length); }
 function randomLinesBilingual(title){
   const t = title.toLowerCase();
-  const i1 = pickIdx(L1), i2 = pickIdx(L2), i3 = pickIdx(L3);
-  const s1 = L1[i1], s2 = L2[i2], s3 = L3[i3];
+  const s1=L1[pickIdx(L1)], s2=L2[pickIdx(L2)], s3=L3[pickIdx(L3)];
   return [
-    { en: s1.en(t), ko: s1.ko(t) },
-    { en: s2.en(),  ko: s2.ko()  },
-    { en: s3.en(),  ko: s3.ko()  }
+    { en:s1.en(t), ko:s1.ko(t) },
+    { en:s2.en(), ko:s2.ko() },
+    { en:s3.en(), ko:s3.ko() }
   ];
 }
 
@@ -223,7 +221,7 @@ function loadVoices(){ try{ voices = window.speechSynthesis ? speechSynthesis.ge
 function sortVoices(list){ return [...list].sort((a,b)=>{ const score=v=>(/en[-_]?US/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0); const ds=score(b)-score(a); return ds||((a.name||'').localeCompare(b.name||'')); }); }
 function populateVoiceSelect(){ voiceSelect.innerHTML=''; if(!voices.length){ const o=document.createElement('option'); o.textContent='(no voices)'; o.value=''; voiceSelect.appendChild(o); voiceSelect.disabled=true; return; } voiceSelect.disabled=false; const sorted=sortVoices(voices); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=`${v.name} — ${v.lang}`; voiceSelect.appendChild(o);} const byURI=sorted.find(v=>(v.voiceURI||'')===(user.voiceURI||'')); if(byURI) voiceSelect.value=byURI.voiceURI||''; else { const enUS=sorted.find(v=>/en[-_]?US/i.test(v.lang)); voiceSelect.value=(enUS&&(enUS.voiceURI||''))||(sorted[0].voiceURI||''); user.voiceURI=voiceSelect.value; saveUser(user);} }
 async function waitForVoices(timeout=2000){ if(!('speechSynthesis' in window)) return; loadVoices(); if(voices.length) return; await new Promise(res=>{ const t0=Date.now(); function h(){ loadVoices(); if(voices.length||Date.now()-t0>timeout){ speechSynthesis.removeEventListener('voiceschanged',h); res(); } } speechSynthesis.addEventListener('voiceschanged',h); setTimeout(h,timeout); }); }
-if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.addEventListener('voiceschanged', ()=>{ loadVoices(); populateVoiceSelect(); updateDiag(); }); }
+if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.addEventListener('voiceschanged', ()=>{ loadVoices(); populateVoiceSelect(); }); }
 function resumeTTS(){ try{ if('speechSynthesis' in window && speechSynthesis.paused) speechSynthesis.resume(); }catch(_){} }
 window.addEventListener('pointerdown', resumeTTS, { once:true }); document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') resumeTTS(); });
 function getVoice(){ if(!voices.length) return null; if(user.voiceURI){ const v=voices.find(v=>(v.voiceURI||'')===user.voiceURI); if(v) return v; } return voices.find(v=>/en[-_]?US/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang))||voices[0]||null; }
@@ -241,7 +239,7 @@ function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0;
 function tokenize(s){ return norm(s).split(' ').filter(Boolean); }
 function wordDiffFeedback(ref, hyp){ const R=tokenize(ref), H=tokenize(hyp); if(!H.length) return ['조금 더 크게, 또렷하게 말해줘요!']; const setH=new Set(H); const tips=[]; const missing=R.filter(w=>!setH.has(w)); if(missing.length>=2) tips.push('단어 몇 개 빠졌어요 (전체 끝까지 말하기).'); if(H.length <= Math.max(2, Math.floor(R.length*0.6))) tips.push('말이 너무 짧아요. 전체 문장을 끝까지 말해보세요.'); const endsS=R.filter(w=>/^[a-z]+s$/.test(w)); if(endsS.some(w=>!H.includes(w))) tips.push('복수형/3인칭 단수 -s 소리를 살려요.'); const endsED=R.filter(w=>/^[a-z]+ed$/.test(w)); if(endsED.some(w=>!H.includes(w))) tips.push('과거형 -ed 발음 점검!'); if(/th/.test(norm(ref)) && !/th/.test(norm(hyp))) tips.push('th(θ/ð) 혀끝 소리 주의!'); if(/[rl]/.test(norm(ref)) && !/[rl]/.test(norm(hyp))) tips.push('R/L 구분 또렷하게!'); if(/v/.test(norm(ref)) && /b/.test(norm(hyp))) tips.push('v(아랫입술+윗이) vs b 구분!'); if(tips.length<=1) tips.push('억양을 살려 자연스럽게 읽어보세요.'); return tips.slice(0,2); }
 
-// ===== UI 참조 =====
+// ===== UI =====
 const tabs=document.querySelectorAll('.tab');
 const views={home:document.getElementById('home'),challenge:document.getElementById('challenge'),progress:document.getElementById('progress')};
 const elTitle=document.getElementById('dayTitle'); const elDayNum=document.getElementById('dayNum'); const elLines=document.getElementById('lines');
@@ -249,9 +247,7 @@ const elAvg=document.getElementById('avgScore'); const elProgText=document.getEl
 const elDone=document.getElementById('markDone'); const elStreak=document.getElementById('streak'); const elLastDone=document.getElementById('lastDone');
 const elRate=document.getElementById('rate'); const elToast=document.getElementById('toast'); const elToastMsg=document.getElementById('toastMsg');
 const btnRetry=document.getElementById('btnRetry'); const btnReset=document.getElementById('btnReset');
-const badgeSupport=document.getElementById('diagSupport'); const badgeVoices=document.getElementById('diagVoices');
 
-// 탭
 for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classList.remove('active')); t.classList.add('active');
   Object.values(views).forEach(v=>v.style.display='none'); views[t.dataset.view].style.display='';
   if(t.dataset.view==='challenge') renderChallenge100();
@@ -261,15 +257,20 @@ for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classL
 // 토스트
 let toastTimer; function toast(msg){ clearTimeout(toastTimer); elToastMsg.textContent=msg; elToast.style.display='flex'; toastTimer=setTimeout(()=>elToast.style.display='none', 1800); }
 
-// TTS 속도
+// 속도
 elRate.textContent=(user.ttsRate||1).toFixed(1)+'x';
 document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 
-// ===== 오늘 렌더링 =====
+// ===== Day/상태 =====
 function getTodayDay(){ const auto=computeDayFromStart(); const cur=prog._currentDay||auto; const d=Math.max(1,Math.min(100,cur)); if(prog._currentDay!==d){ prog._currentDay=d; saveProg(prog);} return d; }
-function ensureDayState(day){ const k='Day'+day; if(!prog[k]){ prog[k]={ lines:[{heard:false,score:null,fb:[]},{heard:false,score:null,fb:[]},{heard:false,score:null,fb:[]}], done:false, avg:null }; saveProg(prog);} return prog[k]; }
+function ensureDayState(day){
+  const k='Day'+day;
+  if(!prog[k]){ prog[k]={ lines:[{heard:false},{heard:false},{heard:false}], done:false, comboScore:null }; saveProg(prog); }
+  return prog[k];
+}
 
+// ===== 렌더 =====
 function renderToday(){
   const day=getTodayDay(); const data=ensureDayState(day); const title=TITLES[day-1];
   const pairs=randomLinesBilingual(title);
@@ -288,27 +289,27 @@ function renderToday(){
     const btnPlay=document.createElement('button'); btnPlay.className='btn'; btnPlay.textContent='▶︎ 듣기';
     btnPlay.onclick=()=>{ speak(text); data.lines[i].heard=true; saveProg(prog); updateProgress(); };
 
-    const btnRec=document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기';
+    const btnRec=document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기(연습)';
     const btnStop=document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 정지'; btnStop.disabled=true;
     if(!sttSupported){ btnRec.disabled=true; btnStop.disabled=true; btnRec.title='이 기기에서는 음성 인식이 제한됩니다.'; }
 
-    const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent=data.lines[i].score!=null?(`점수 ${data.lines[i].score}%`):'';
-    const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent = (data.lines[i].fb||[]).join(' · ');
+    const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent='';
+    const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent='(연습용, 점수는 반영되지 않음)';
 
     let rec=null;
-    function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기'; } }
+    function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…(연습)'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기(연습)'; } }
 
     btnRec.onclick=()=>{ 
       if(rec||!sttSupported) return; 
-      btnRec.disabled=true; btnStop.disabled=false; setRecUI(true); toast('말해 보세요…');
+      btnRec.disabled=true; btnStop.disabled=false; setRecUI(true); toast('말해 보세요… (연습)');
       rec=createRecognizer((e)=>{
         const hyp=e.results[0][0].transcript;
         const s=scoreSentence(text,hyp);
         const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hyp);
-        data.lines[i].score=s; data.lines[i].fb=fb; saveProg(prog);
-        scoreBox.textContent=`점수 ${s}%`;
-        fbBox.textContent=fb.join(' · ');
-      },()=>{ btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; updateProgress(); });
+        // ← 연습용: 저장/반영하지 않음 (prog에 기록 X)
+        scoreBox.textContent=`연습 점수 ${s}%`;
+        fbBox.textContent=fb.join(' · ') + ' · (반영되지 않음)';
+      },()=>{ btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; /* updateProgress(); */ });
       if(rec) rec.start();
     };
     btnStop.onclick=()=>{ if(rec){ rec.stop(); } };
@@ -318,7 +319,7 @@ function renderToday(){
     elLines.appendChild(line);
   });
 
-  // 3문장 연속 듣기 & 3문장 연속 말하기(연습: 한 번에)
+  // 3문장 연속 듣기 & 3문장 연속 말하기(최종반영)
   const allRow=document.createElement('div'); allRow.className='row';
 
   const btnAll=document.createElement('button');
@@ -331,9 +332,9 @@ function renderToday(){
 
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri';
-  btnRecAll.textContent='● 3문장 연속 말하기(연습)';
+  btnRecAll.textContent='● 3문장 연속 말하기(최종반영)';
   if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
-  btnRecAll.onclick=()=> practiceReciteOneShot(pairs.map(x=>x.en), btnRecAll);
+  btnRecAll.onclick=()=> practiceReciteOneShot_final(pairs.map(x=>x.en), btnRecAll); // ← 최종반영 모드
   allRow.appendChild(btnRecAll);
 
   elLines.appendChild(allRow);
@@ -343,12 +344,16 @@ function renderToday(){
 
 function updateProgress(){
   const day=getTodayDay(); const d=prog['Day'+day]; if(!d) return;
-  const heard=d.lines.filter(x=>x.heard).length; const haveScores=d.lines.every(x=>typeof x.score==='number');
-  const avg = haveScores? Math.round(d.lines.reduce((a,x)=>a+(x.score||0),0)/3) : null;
-  document.getElementById('avgScore').textContent = avg!=null? (avg+'%'):'—';
+  const heard=d.lines.filter(x=>x.heard).length;
   document.getElementById('progressText').textContent=`${heard}/3`;
   document.getElementById('meterBar').style.width=((heard/3)*100)+'%';
-  const pass = haveScores && avg>=80 && heard===3;
+
+  // 종합점수(연속 말하기 결과만)
+  const avg = (typeof d.comboScore==='number') ? d.comboScore : null;
+  document.getElementById('avgScore').textContent = avg!=null? (avg+'%'):'—';
+
+  // 완료 조건: 3문장 모두 듣기 + comboScore ≥ 80
+  const pass = heard===3 && (avg!=null && avg>=80);
   const elDone=document.getElementById('markDone');
   elDone.disabled=!pass; elDone.textContent=pass?'✔ 조건 충족! 오늘 완료하기':'✔ 오늘 완료로 표시';
   elDone.onclick=()=>{ if(pass){ markDone(getTodayDay(),avg); } };
@@ -356,7 +361,7 @@ function updateProgress(){
 
 function markDone(day,avg){
   const k='Day'+day; const title=TITLES[day-1];
-  prog[k].done=true; prog[k].avg=avg; prog.lastDone=k;
+  prog[k].done=true; prog[k].comboScore=avg; prog.lastDone=k;
   const prev='Day'+(day-1), prevStreak=prog.streak||0;
   prog.streak = (day>1 && prog[prev]&&prog[prev].done)? prevStreak+1 : 1;
   const now=todayKey();
@@ -370,39 +375,38 @@ function markDone(day,avg){
   renderChallenge100(); renderHistory();
 }
 
-function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
+function initHeaderKPI(){
+  document.getElementById('streak').textContent = prog.streak||0;
+  document.getElementById('lastDone').textContent = prog.lastDone||'—';
+}
 
-// ===== 연속 말하기(연습): 한 번에 받아쓰기 + 종합 채점 =====
+// ===== 3문장 연속 말하기(최종반영) — 받아쓰기 없이 시작/중지 + 종합 채점 =====
 function concatenateLines(lines){ return lines.join(' '); }
 
-async function practiceReciteOneShot(lines, triggerBtn){
+function practiceReciteOneShot_final(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요.'); return; }
 
-  // ▶ 트리거 버튼 원복 함수(즉시/보장)
   const origText = triggerBtn ? triggerBtn.textContent : '';
   function restoreTrigger(){
     if(triggerBtn){
       triggerBtn.classList.remove('rec');
       triggerBtn.disabled = false;
-      triggerBtn.textContent = origText || '● 3문장 연속 말하기(연습)';
+      triggerBtn.textContent = origText || '● 3문장 연속 말하기(최종반영)';
     }
   }
-
-  // trigger 버튼 UI: 녹음 시작
-  if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
 
   // 패널
   const wrap=document.createElement('div'); wrap.className='practice';
   const box=document.createElement('div'); box.className='box';
   const refs = lines.map((s,i)=>`${i+1}. ${s}`).join('\n');
   box.innerHTML = `
-    <h3>🎤 3문장 연속 말하기 (연습 · 한 번에)</h3>
-    <div class="ref">아래 문장을 한 번에 이어서 자연스럽게 말해 보세요.<br><pre style="margin:6px 0 0; white-space:pre-wrap">${refs}</pre></div>
-    <div class="trans" id="transBox">… 듣는 중 · 말한 내용이 여기에 실시간으로 적혀요</div>
+    <h3>🎤 3문장 연속 말하기 (최종반영)</h3>
+    <div class="ref">아래 3문장을 한 번에 자연스럽게 말해 보세요.\n\n${refs}</div>
     <div class="meta">
-      <button class="btn rec" id="btnStopAll">■ 중지</button>
-      <span class="small">종료하면 3문장 기준으로 종합 채점/피드백이 표시됩니다. (기록에는 반영하지 않음)</span>
+      <button class="btn pri" id="btnStart">● 말하기 시작</button>
+      <button class="btn" id="btnStop" disabled>■ 중지</button>
+      <span class="small">시작을 누르면 녹음이 시작되고, 점수는 최종반영됩니다.</span>
     </div>
     <div class="result" id="resultBox" style="display:none">
       <div>종합 점수: <b id="sumScore">—</b></div>
@@ -412,46 +416,67 @@ async function practiceReciteOneShot(lines, triggerBtn){
   `;
   wrap.appendChild(box); document.body.appendChild(wrap);
 
-  const transBox = box.querySelector('#transBox');
-  const resultBox = box.querySelector('#resultBox');
+  const btnStart = box.querySelector('#btnStart');
+  const btnStop  = box.querySelector('#btnStop');
+  const resultBox= box.querySelector('#resultBox');
   const sumScore = box.querySelector('#sumScore');
-  const sumFb = box.querySelector('#sumFb');
-  const btnStopAll = box.querySelector('#btnStopAll');
+  const sumFb    = box.querySelector('#sumFb');
 
   let finalText = '';
-  let rec = createRecognizer((e)=>{
-    let interim = '';
+  let rec=null;
+
+  function onResult(e){
+    // 받아쓰기 표시 없음 — 결과만 누적
     for (let i = e.resultIndex; i < e.results.length; i++){
       const r = e.results[i];
       if (r.isFinal) finalText += (finalText ? ' ' : '') + r[0].transcript;
-      else interim += (interim ? ' ' : '') + r[0].transcript;
     }
-    transBox.textContent = (finalText + ' ' + interim).trim() || '(아직 인식된 내용이 없어요)';
-  }, ()=>{ // onend → 결과 표시 + 트리거 복구(보장)
+  }
+  function onEnd(){
+    // 채점 & 반영
     const refAll = concatenateLines(lines);
     const sc = scoreSentence(refAll, finalText);
     const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
     sumScore.textContent = isNaN(sc)? '—' : (sc + '%');
     sumFb.textContent = fb.join(' · ');
     resultBox.style.display = '';
-    btnStopAll.disabled = true;
-    btnStopAll.textContent = '중지됨';
-    restoreTrigger(); // ← 종료 시에도 복구
-  }, {continuous:true, interim:true});
 
-  if(!rec){ restoreTrigger(); return; }
+    // 최종반영: comboScore 저장
+    const day=getTodayDay(); const d=ensureDayState(day);
+    d.comboScore = isNaN(sc)? null : sc; saveProg(prog);
+    updateProgress(); // 통과 시 완료 버튼 활성화
 
-  // ▶ 중지 버튼: 즉시 복구 + stop
-  btnStopAll.onclick = ()=>{ try{ rec.stop(); }catch(_){ } btnStopAll.disabled = true; btnStopAll.textContent = '중지됨'; restoreTrigger(); };
+    btnStop.disabled = true; btnStop.textContent = '중지됨';
+    restoreTrigger();
+  }
 
-  // 닫기
-  box.querySelector('#btnClosePanel').onclick = ()=>{ try{ rec.abort(); }catch(_){ } document.body.removeChild(wrap); restoreTrigger(); };
+  btnStart.onclick = ()=>{
+    if(rec) return;
+    // 트리거 UI
+    if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
+    btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
+    btnStop.disabled=false;
 
-  rec.start();
-  toast('한 번에 3문장을 말해 보세요…');
+    rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
+    if(rec) rec.start();
+    toast('한 번에 3문장을 말해 보세요…');
+  };
+
+  btnStop.onclick = ()=>{
+    if(rec){ try{ rec.stop(); }catch(_){ } }
+    btnStop.disabled = true; btnStop.textContent = '중지됨';
+    // 트리거 즉시 복구
+    restoreTrigger();
+  };
+
+  box.querySelector('#btnClosePanel').onclick = ()=>{
+    try{ if(rec) rec.abort(); }catch(_){}
+    document.body.removeChild(wrap);
+    restoreTrigger();
+  };
 }
 
-// ===== 100일 챌린지 =====
+// ===== 100일 캘린더 =====
 function renderChallenge100(){
   const grid=document.getElementById('challenge100'); grid.innerHTML='';
   const cur=getTodayDay();
@@ -471,8 +496,8 @@ function renderHistory(){
   let list = Array.isArray(prog._history) ? [...prog._history] : [];
   if (!list.length){
     list = Object.entries(prog)
-      .filter(([k,v])=>/^Day\d+$/.test(k) && v && v.avg!=null)
-      .map(([k,v])=>({ day: parseInt(k.slice(3)), date: '', title: TITLES[parseInt(k.slice(3))-1], avg: v.avg }));
+      .filter(([k,v])=>/^Day\d+$/.test(k) && v && typeof v.comboScore==='number')
+      .map(([k,v])=>({ day: parseInt(k.slice(3)), date: '', title: TITLES[parseInt(k.slice(3))-1], avg: v.comboScore }));
   }
   list.sort((a,b)=> a.day - b.day);
   if(!list.length){ box.innerHTML='<div class="small">아직 기록이 없습니다.</div>'; return; }
@@ -488,7 +513,7 @@ function renderHistory(){
 }
 
 // ===== 치트키 =====
-document.getElementById('btnRetry').onclick=()=>{ const day=getTodayDay(); prog['Day'+day]={ lines:[{heard:false,score:null,fb:[]},{heard:false,score:null,fb:[]},{heard:false,score:null,fb:[]}], done:false, avg:null }; saveProg(prog); renderToday(); toast('🔁 오늘 학습을 초기 상태로 되돌렸어요.');};
+document.getElementById('btnRetry').onclick=()=>{ const day=getTodayDay(); prog['Day'+day]={ lines:[{heard:false},{heard:false},{heard:false}], done:false, comboScore:null }; saveProg(prog); renderToday(); toast('🔁 오늘 학습을 초기 상태로 되돌렸어요.');};
 document.getElementById('btnReset').onclick=()=>{ if(!confirm('정말 전체 데이터를 초기화할까요? (취소 불가)')) return;
   localStorage.removeItem(LS_PROGRESS); prog=loadProg(); prog._startedAt=todayKey(); prog._currentDay=1; prog._history=[]; saveProg(prog);
   initHeaderKPI(); renderToday(); renderChallenge100(); renderHistory(); toast('🧹 모든 데이터가 초기화됐어요.');
@@ -497,11 +522,10 @@ document.getElementById('btnReset').onclick=()=>{ if(!confirm('정말 전체 데
 // ===== PWA =====
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
-// ===== 진단 배지 =====
-async function updateDiag(){ const supported='speechSynthesis' in window; badgeSupport.textContent='TTS: ' + (supported?'yes':'no'); badgeSupport.className='badge '+(supported?'good':'bad'); badgeVoices.textContent='voices: ' + (voices?voices.length:0); badgeVoices.className='badge ' + ((voices&&voices.length)?'good':'bad'); }
-async function initDiag(){ await waitForVoices(1200); populateVoiceSelect(); updateDiag(); }
-
 // ===== 부팅 =====
+function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
+async function updateDiag(){} // (숨김)
+async function initDiag(){ loadVoices(); populateVoiceSelect(); }
 async function boot(){ await initDiag(); initHeaderKPI(); renderToday(); renderChallenge100(); }
 boot();
 </script>
@@ -509,7 +533,7 @@ boot();
 <!--
 필수 파일:
 - manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=8)
-- sw.js  (캐시 키 업데이트 권장: d3l-v9로 올리면 새 코드가 바로 적용돼요)
+- sw.js  (오프라인 캐시; 새 코드 강제적용 위해 캐시키 d3l-v10 권장)
 -->
 </body>
 </html>
