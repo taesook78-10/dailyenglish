@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Daily 3 Lines — 100일 챌린지 (PWA • 모바일 대응)</title>
+  <title>Daily 3 Lines — 100일 챌린지 (랜덤 문장·TTS/STT/점수)</title>
   <meta name="theme-color" content="#0b1020" />
-  <!-- PWA: manifest & icons (루트에 manifest.webmanifest, 아이콘 배치 필요) -->
+  <!-- PWA -->
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
   <style>
     :root{ --bg:#0b1020; --card:#111a34; --ink:#e8eefc; --muted:#a7b3d6; --pri:#5b8cff; --good:#21d39b; --warn:#ffb454; --bad:#ff5c7a; --ring:#31457a; --shadow:0 12px 40px rgba(0,0,0,.35); --radius:18px; }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, sans-serif;color:var(--ink);background:radial-gradient(80% 60% at 10% 0%,#15224b 0%,#0b1020 60%), radial-gradient(80% 60% at 100% 100%,#0f1834 0%,#0b1020 60%);}  
+    body{margin:0;font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, sans-serif;color:var(--ink);
+      background:radial-gradient(80% 60% at 10% 0%,#15224b 0%,#0b1020 60%), radial-gradient(80% 60% at 100% 100%,#0f1834 0%,#0b1020 60%);}
     .wrap{max-width:1100px;margin:0 auto;padding:20px}
     header{display:flex;align-items:center;gap:14px;margin:6px 0 14px;flex-wrap:wrap}
     h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.2px}
@@ -35,7 +36,6 @@
     .btn:hover{filter:brightness(1.05)}
     .btn[disabled]{opacity:.6;cursor:not-allowed}
     .btn.pri{background:linear-gradient(180deg,#355bff,#2b4bd4);border-color:#3b57e0}
-    .btn.good{background:#0e3a2a;border-color:#1b7b5b}
     .btn.warn{background:#3a2a0e;border-color:#9f6b18}
     .btn.ghost{background:transparent;border-color:#2b3f7a}
     .score{font-weight:800}
@@ -56,7 +56,7 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Daily 3 Lines <span class="badge">100일 챌린지 • PWA</span></h1>
+      <h1>Daily 3 Lines <span class="badge">100일 챌린지 • 랜덤 문장</span></h1>
       <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap">
         <button class="btn ghost" id="btnRetry">⟲ 다시 하기</button>
         <button class="btn warn" id="btnReset">⟲ 전체 초기화</button>
@@ -153,7 +153,7 @@ function computeDayFromStart(){
 }
 
 // =============================
-// 고정 콘텐츠 100개 (미국 성인 일상 회화 톤, 랜덤 X)
+// 제목 100개
 // =============================
 const TITLES = [
   'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
@@ -169,52 +169,93 @@ const TITLES = [
   'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
 ];
 
-function fixedLines(title){
-  // 제목마다 고정 3문장(템플릿이지만 랜덤 없이 결정적)
-  return [
-    `We talked about ${title.toLowerCase()} today.`,
-    "Nothing fancy—just keeping it simple and practical.",
-    "I’ll try to stay consistent this week."
-  ];
+// =============================
+// 랜덤 3문장 (매 새로고침 변경)
+// =============================
+const L1 = [
+  (t)=>`I spent some time on ${t} today.`,
+  (t)=>`I worked on ${t} a bit this morning.`,
+  (t)=>`We focused on ${t} for a while today.`,
+  (t)=>`I finally got around to ${t}.`,
+  (t)=>`I checked in on ${t} after work.`,
+];
+const L2 = [
+  ()=>"Nothing fancy—just keeping things simple.",
+  ()=>"It took longer than I expected, to be honest.",
+  ()=>"It was casual but really helpful.",
+  ()=>"It wasn’t perfect, but it was progress.",
+  ()=>"I tried to keep it practical and not overthink it.",
+];
+const L3 = [
+  ()=>"I'll try to be more consistent this week.",
+  ()=>"Next time, I'll plan ahead and keep it easy.",
+  ()=>"I'm glad we're on the same page now.",
+  ()=>"Small wins still count.",
+  ()=>"Slow and steady works for me.",
+];
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function randomLines(title){
+  const t = title.toLowerCase();
+  return [ pick(L1)(t), pick(L2)(), pick(L3)() ];
 }
 
-const CONTENT = TITLES.slice(0,100).map((t)=>({ title: t, lines: fixedLines(t) }));
-
 // =============================
-// 음성 합성 / 인식 / 채점
+// TTS(듣기) — 모바일 안정화 + 연속 듣기
 // =============================
+let voices = [];
+function loadVoices(){ try{ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }catch(e){ voices=[]; } }
+if('speechSynthesis' in window){
+  loadVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+}
+function ensureSpeechReady(){
+  try{ if (speechSynthesis.paused) speechSynthesis.resume(); }catch(_){}
+}
+function speakOnce(text){
+  return new Promise((resolve)=>{
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = user.lang || 'en-US';
+    utt.rate = user.ttsRate || 1;
+    const v = voices.find(x=>/en[-_]?US/i.test(x.lang)) || voices[0];
+    if(v) utt.voice = v;
+    utt.onend = ()=>resolve();
+    try{ speechSynthesis.cancel(); }catch(_){}
+    ensureSpeechReady();
+    speechSynthesis.speak(utt);
+  });
+}
+async function speakQueue(arr, onStart, onEnd){
+  try{
+    onStart && onStart();
+    for(const s of arr){ await speakOnce(s); }
+  } finally {
+    onEnd && onEnd();
+  }
+}
 function speak(text){
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = user.lang||'en-US';
-  utt.rate = user.ttsRate||1;
-  const voices = speechSynthesis.getVoices();
-  const pick = voices.find(v=>/en[-_]?US/i.test(v.lang)) || voices[0];
-  if(pick) utt.voice = pick;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(utt);
+  // 단일 문장용 (버튼)
+  speakQueue([text]);
 }
 
+// =============================
+// STT(말하기) & 채점
+// =============================
 function createRecognizer(onResult, onEnd){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요. 크롬을 권장합니다.'); return null; }
+  if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요. 크롬/안드로이드 권장.'); return null; }
   const rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
   rec.onresult = (e)=>{ const text = e.results[0][0].transcript; onResult(text); };
   rec.onerror = (e)=>{ toast('음성 인식 오류: '+(e.error||'unknown')); };
   rec.onend = ()=>{ onEnd && onEnd(); };
   return rec;
 }
-
 function levenshtein(a,b){
   const m=a.length, n=b.length; const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
   for(let i=0;i<=m;i++) dp[i][0]=i; for(let j=0;j<=n;j++) dp[0][j]=j;
   for(let i=1;i<=m;i++){
     for(let j=1;j<=n;j++){
       const cost = a[i-1]===b[j-1]?0:1;
-      dp[i][j]=Math.min(
-        dp[i-1][j]+1,
-        dp[i][j-1]+1,
-        dp[i-1][j-1]+cost
-      );
+      dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
     }
   }
   return dp[m][n];
@@ -228,7 +269,7 @@ function scoreSentence(ref, hyp){
 }
 
 // =============================
-// UI 요소 참조
+// UI 요소
 // =============================
 const tabs = document.querySelectorAll('.tab');
 const views = {home: document.getElementById('home'), challenge: document.getElementById('challenge'), progress: document.getElementById('progress')};
@@ -247,9 +288,7 @@ const elToastMsg = document.getElementById('toastMsg');
 const btnRetry = document.getElementById('btnRetry');
 const btnReset = document.getElementById('btnReset');
 
-// =============================
-// 탭 전환
-// =============================
+// 탭
 for (const t of tabs){ t.addEventListener('click',()=>{
   tabs.forEach(b=>b.classList.remove('active')); t.classList.add('active');
   Object.values(views).forEach(v=>v.style.display='none'); views[t.dataset.view].style.display='';
@@ -257,21 +296,16 @@ for (const t of tabs){ t.addEventListener('click',()=>{
   if(t.dataset.view==='progress') renderHistory();
 }); }
 
-// =============================
 // 토스트
-// =============================
 let toastTimer; function toast(msg){ clearTimeout(toastTimer); elToastMsg.textContent=msg; elToast.style.display='flex'; toastTimer=setTimeout(()=>elToast.style.display='none', 1800); }
 
-// =============================
 // TTS 속도
-// =============================
 elRate.textContent = (user.ttsRate||1).toFixed(1)+'x';
-
 document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 
 // =============================
-// 오늘 렌더링
+// 오늘 렌더링 (랜덤 3문장 + 연속듣기 버튼)
 // =============================
 function getTodayDay(){
   const auto = computeDayFromStart();
@@ -280,7 +314,6 @@ function getTodayDay(){
   if(prog._currentDay!==capped){ prog._currentDay=capped; saveProg(prog); }
   return capped;
 }
-
 function ensureDayState(day){
   const key = 'Day'+day;
   if(!prog[key]){ prog[key] = { lines:[{heard:false,score:null},{heard:false,score:null},{heard:false,score:null}], done:false, avg:null }; saveProg(prog); }
@@ -290,12 +323,17 @@ function ensureDayState(day){
 function renderToday(){
   const day = getTodayDay();
   const data = ensureDayState(day);
-  const content = CONTENT[day-1];
+  const title = TITLES[day-1];
+  const lines = randomLines(title);
+
   elDayNum.textContent = day;
-  elTitle.textContent = content.title;
+  elTitle.textContent = title;
   elLines.innerHTML='';
 
-  content.lines.forEach((text,i)=>{
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const sttSupported = !!SR;
+
+  lines.forEach((text,i)=>{
     const line = document.createElement('div'); line.className='line';
     const p = document.createElement('p'); p.textContent = text; line.appendChild(p);
     const row = document.createElement('div'); row.className='row';
@@ -306,10 +344,12 @@ function renderToday(){
     const btnRec = document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기';
     const btnStop = document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 정지'; btnStop.disabled=true;
 
+    if(!sttSupported){ btnRec.disabled = true; btnStop.disabled = true; btnRec.title = '이 기기에서는 음성 인식이 제한됩니다.'; }
+
     const scoreBox = document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent = data.lines[i].score!=null? (`점수 ${data.lines[i].score}%`):'';
 
     let rec=null; btnRec.onclick=()=>{
-      if(rec) return; btnRec.disabled=true; btnStop.disabled=false; toast('말해 보세요…');
+      if(rec || !sttSupported) return; btnRec.disabled=true; btnStop.disabled=false; toast('말해 보세요…');
       rec = createRecognizer((hyp)=>{
         const s = scoreSentence(text, hyp); data.lines[i].score=s; saveProg(prog); scoreBox.textContent = `점수 ${s}%`;
       },()=>{ btnRec.disabled=false; btnStop.disabled=true; rec=null; updateProgress(); });
@@ -322,6 +362,16 @@ function renderToday(){
     elLines.appendChild(line);
   });
 
+  // 3문장 연속 듣기 버튼
+  const allRow = document.createElement('div'); allRow.className='row';
+  const btnAll = document.createElement('button'); btnAll.className='btn pri'; btnAll.textContent='▶︎ 3문장 연속 듣기';
+  btnAll.onclick=()=> speakQueue(lines,
+    ()=>{ btnAll.disabled=true; btnAll.textContent='▶︎ 재생 중…'; },
+    ()=>{ btnAll.disabled=false; btnAll.textContent='▶︎ 3문장 연속 듣기'; }
+  );
+  allRow.appendChild(btnAll);
+  elLines.appendChild(allRow);
+
   updateProgress();
 }
 
@@ -332,12 +382,11 @@ function updateProgress(){
   const avg = haveScores? Math.round(scored.reduce((a,b)=>a+b,0)/3): null;
   elAvg.textContent = avg!=null? (avg+'%'):'—';
   elProgText.textContent = `${heardCount}/3`;
-  elMeter.style.width = ((heardCount/3)*100)+'%';
+  document.getElementById('meterBar').style.width = ((heardCount/3)*100)+'%';
 
   const pass = haveScores && avg>=80 && heardCount===3;
   elDone.disabled = !pass;
   elDone.textContent = pass? '✔ 조건 충족! 오늘 완료하기' : '✔ 오늘 완료로 표시';
-
   elDone.onclick=()=>{ if(pass){ markDone(day, avg); } };
 }
 
@@ -348,15 +397,15 @@ function markDone(day, avg){
   const prevStreak = prog.streak||0;
   if(day>1 && prog[prevKey] && prog[prevKey].done){ prog.streak = prevStreak+1; } else { prog.streak = 1; }
   saveProg(prog);
-  elStreak.textContent = prog.streak;
-  elLastDone.textContent = prog.lastDone;
+  document.getElementById('streak').textContent = prog.streak;
+  document.getElementById('lastDone').textContent = prog.lastDone;
   toast('✅ 오늘 학습 완료!');
   renderChallenge100(); renderHistory();
 }
 
 function initHeaderKPI(){
-  elStreak.textContent = prog.streak||0;
-  elLastDone.textContent = prog.lastDone||'—';
+  document.getElementById('streak').textContent = prog.streak||0;
+  document.getElementById('lastDone').textContent = prog.lastDone||'—';
 }
 
 // =============================
@@ -398,14 +447,13 @@ function renderHistory(){
 }
 
 // =============================
-// 치트키: 다시 하기 / 초기화
+// 치트키
 // =============================
 btnRetry.onclick = ()=>{
   const day = getTodayDay();
   prog['Day'+day] = { lines:[{heard:false,score:null},{heard:false,score:null},{heard:false,score:null}], done:false, avg:null };
   saveProg(prog); renderToday(); toast('🔁 오늘 학습을 초기 상태로 되돌렸어요.');
 };
-
 btnReset.onclick = ()=>{
   if(!confirm('정말 전체 데이터를 초기화할까요? (취소 불가)')) return;
   localStorage.removeItem(LS_PROGRESS);
@@ -429,7 +477,6 @@ if('serviceWorker' in navigator){
 initHeaderKPI();
 renderToday();
 renderChallenge100();
-
 </script>
 
 <!--
@@ -449,15 +496,9 @@ renderChallenge100();
   ]
 }
 
-2) sw.js  (아주 단순한 오프라인 캐시)
+2) sw.js  (간단 오프라인 캐시)
 const CACHE = 'd3l-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './icon-192.png',
-  './icon-512.png',
-  './manifest.webmanifest'
-];
+const ASSETS = ['./','./index.html','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
 self.addEventListener('install', e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
 });
@@ -476,7 +517,7 @@ self.addEventListener('fetch', e=>{
 });
 
 3) 아이콘 파일
-- icon-192.png, icon-512.png (임시로 아무 정사각 PNG 사용 가능)
+- icon-192.png, icon-512.png
 -->
 
 </body>
