@@ -74,11 +74,7 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Daily 3 Lines
-        <span class="badge">100일 챌린지</span>
-        <span id="diagSupport" class="badge">TTS: —</span>
-        <span id="diagVoices" class="badge">voices: —</span>
-      </h1>
+      <h1>Daily 3 Lines <span class="badge">100일 챌린지</span></h1>
       <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap">
         <button class="btn ghost" id="btnRetry">⟲ 다시 하기</button>
         <button class="btn warn" id="btnReset">⟲ 전체 초기화</button>
@@ -110,7 +106,7 @@
           </div>
           <div class="kpi">
             <div class="chip">종합 점수: <span class="score" id="avgScore">—</span></div>
-            <div class="chip">진행: <span id="progressText">0/3</span></div>
+            <div class="chip">진도: <span id="progressText">0%</span></div>
           </div>
         </div>
         <div class="body" id="lines"></div>
@@ -119,14 +115,14 @@
       <div class="card">
         <div class="hd"><h2>오늘의 목표</h2><div class="chip">80점 이상 성공</div></div>
         <div class="body">
-          <div class="meter" title="듣기 진행(3문장)"><i id="meterBar"></i></div>
+          <div class="meter" title="3문장 연속 말하기 종합 점수"><i id="meterBar"></i></div>
           <div style="height:10px"></div>
           <button class="btn pri" id="markDone" disabled>✔ 오늘 완료로 표시</button>
           <div style="height:12px"></div>
           <div class="hint">세 문장을 모두 듣고(▶︎) <b>3문장 연속 말하기(점수 반영)</b>에서 80점 이상이면 완료할 수 있어요.</div>
           <div style="height:12px"></div>
           <div class="kpi">
-            <div class="chip">연속일수: <b id="streak">0</b>일</span></div>
+            <div class="chip">연속일수: <b id="streak">0</b>일</div>
             <div class="chip">마지막 완료: <span id="lastDone">—</span></div>
           </div>
         </div>
@@ -282,7 +278,7 @@ function renderToday(){
     const row=document.createElement('div'); row.className='row';
 
     const btnPlay=document.createElement('button'); btnPlay.className='btn'; btnPlay.textContent='▶︎ 듣기';
-    btnPlay.onclick=()=>{ speak(text); data.lines[i].heard=true; saveProg(prog); updateProgress(); };
+    btnPlay.onclick=()=>{ speak(text); /* 개별 듣기는 진도에 영향 X */ };
 
     const btnRec=document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기(연습)';
     const btnStop=document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 중지'; btnStop.disabled=true;
@@ -291,23 +287,46 @@ function renderToday(){
     const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent='';
     const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent='';
 
-    let rec=null;
+    // ====== 개별 말하기(연습) — 반드시 중지 버튼으로 종료 ======
+    let rec=null, recActive=false, hypAccum='';
     function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…(연습)'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기(연습)'; } }
+
+    function startLineRec(){
+      hypAccum='';
+      rec=createRecognizer((e)=>{
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          const r=e.results[i];
+          if(r.isFinal){ hypAccum += (hypAccum?' ':'') + r[0].transcript; }
+        }
+      }, ()=>{
+        // 자동 onend가 와도 recActive면 즉시 재시작 → 사용자가 '중지' 누를 때까지 계속
+        if(recActive){
+          try{ rec.start(); }catch(_){}
+        }else{
+          // 사용자가 중지 눌러서 끝난 경우 → 점수 계산
+          const s=scoreSentence(text,hypAccum);
+          const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hypAccum);
+          scoreBox.textContent=`연습 점수 ${s}%`;
+          fbBox.textContent=fb.join(' · ');
+          btnRec.disabled=false; btnStop.disabled=true; setRecUI(false);
+          rec=null;
+        }
+      }, {continuous:true, interim:false});
+      if(rec){ try{ rec.start(); }catch(_){ rec=null; toast('마이크를 시작할 수 없어요. 권한을 확인해 주세요.'); } }
+    }
 
     btnRec.onclick=()=>{ 
       if(rec||!sttSupported) return; 
+      recActive=true;
       btnRec.disabled=true; btnStop.disabled=false; setRecUI(true); toast('말해 보세요… (연습)');
-      rec=createRecognizer((e)=>{
-        const hyp=e.results[0][0].transcript;
-        const s=scoreSentence(text,hyp);
-        const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hyp);
-        // 연습: 저장 반영 없음
-        scoreBox.textContent=`연습 점수 ${s}%`;
-        fbBox.textContent=fb.join(' · ');
-      },()=>{ btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; });
-      if(rec) rec.start();
+      startLineRec();
     };
-    btnStop.onclick=()=>{ if(rec){ rec.stop(); } };
+    btnStop.onclick=()=>{ 
+      if(!rec) return;
+      recActive=false;         // ← 반드시 사용자가 중지해야 종료됨(자동 onend는 재시작)
+      try{ rec.stop(); }catch(_){}
+      btnStop.disabled=true; btnStop.textContent='중지됨';
+    };
 
     row.appendChild(btnPlay); row.appendChild(btnRec); row.appendChild(btnStop); row.appendChild(scoreBox);
     line.appendChild(row); line.appendChild(fbBox);
@@ -328,7 +347,7 @@ function renderToday(){
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(점수 반영)';
-  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
+  if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
   btnRecAll.onclick=()=> practiceReciteOneShot_final(pairs.map(x=>x.en), btnRecAll);
   allRow.appendChild(btnRecAll);
 
@@ -338,15 +357,15 @@ function renderToday(){
 }
 
 function updateProgress(){
-  const day=getTodayDay(); const d=prog['Day'+day]; if(!d) return;
-  const heard=d.lines.filter(x=>x.heard).length;
-  document.getElementById('progressText').textContent=`${heard}/3`;
-  document.getElementById('meterBar').style.width=((heard/3)*100)+'%';
+  const day=getTodayDay(); const d=prog['Day'+day]||{};
+  const avg = (typeof d.comboScore==='number') ? d.comboScore : 0;
+  // 종합 점수 기반으로 진도 게이지 & 텍스트 표시
+  document.getElementById('avgScore').textContent = (avg>0? avg+'%':'—');
+  document.getElementById('progressText').textContent = `${avg}%`;
+  document.getElementById('meterBar').style.width = `${avg}%`;
 
-  const avg = (typeof d.comboScore==='number') ? d.comboScore : null;
-  document.getElementById('avgScore').textContent = avg!=null? (avg+'%'):'—';
-
-  const pass = heard===3 && (avg!=null && avg>=80);
+  // 완료 조건은 기존대로: (원하시면 여기서도 점수만으로 바꿔드릴 수 있어요)
+  const pass = avg>=80;
   const elDone=document.getElementById('markDone');
   elDone.disabled=!pass; elDone.textContent=pass?'✔ 조건 충족! 오늘 완료하기':'✔ 오늘 완료로 표시';
   elDone.onclick=()=>{ if(pass){ markDone(getTodayDay(),avg); } };
@@ -354,6 +373,7 @@ function updateProgress(){
 
 function markDone(day,avg){
   const k='Day'+day; const title=TITLES[day-1];
+  if(!prog[k]) prog[k]={lines:[{heard:false},{heard:false},{heard:false}], done:false, comboScore:null};
   prog[k].done=true; prog[k].comboScore=avg; prog.lastDone=k;
   const prev='Day'+(day-1), prevStreak=prog.streak||0;
   prog.streak = (day>1 && prog[prev]&&prog[prev].done)? prevStreak+1 : 1;
@@ -420,7 +440,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   let finalText = '';
   let lastScore = null;
   let lastFb    = '';
-  let canStart  = true;  // ← onend까지 대기하는 락
+  let canStart  = true;
 
   function resetStartUI(){
     btnStart.classList.remove('rec');
@@ -436,7 +456,6 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   }
 
   function onEnd(){
-    // 1회 시도 종료 → 점수 계산만 표시
     const refAll = concatenateLines(lines);
     const sc = scoreSentence(refAll, finalText);
     const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
@@ -447,27 +466,24 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     sumFb.textContent = lastFb;
     resultBox.style.display = '';
 
-    // 다음 시도를 위한 UI/상태 복구
     btnStop.disabled = true; btnStop.textContent = '중지됨';
     resetStartUI();
 
-    // 엔진 정리 및 재시작 가능 플래그
     rec=null;
     finalText='';
-    setTimeout(()=>{ canStart=true; }, 200); // ← 안드로이드에서 onend 직후 재시작 안정화
+    setTimeout(()=>{ canStart=true; }, 200);
   }
 
   btnStart.onclick = ()=>{
-    if(!canStart) return;      // onend 완료 전 재시작 방지
+    if(!canStart) return;
     if(rec) return;
-    canStart=false;            // 시작 시 락
+    canStart=false;
     finalText='';
 
     if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
     btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
     btnStop.disabled=false; btnStop.textContent='■ 중지';
 
-    // 약간의 지연 뒤 새 인스턴스 생성(엔진 리셋 안정화)
     setTimeout(()=>{
       rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
       if(rec){ try{ rec.start(); }catch(_){ canStart=true; resetStartUI(); btnStop.disabled=true; toast('마이크 시작에 실패했습니다. 다시 시도해 주세요.'); } }
@@ -479,14 +495,12 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   btnStop.onclick = ()=>{
     if(rec){ try{ rec.stop(); }catch(_){ } }
     btnStop.disabled = true; btnStop.textContent = '중지됨';
-    // start 버튼은 onEnd에서 다시 활성화됨
   };
 
   box.querySelector('#btnClosePanel').onclick = ()=>{
     try{ if(rec){ rec.abort(); } }catch(_){}
     document.body.removeChild(wrap);
     restoreTrigger();
-    // 마지막 시도 점수 반영
     if(lastScore!=null){
       const day=getTodayDay(); const d=ensureDayState(day);
       d.comboScore = lastScore; saveProg(prog);
