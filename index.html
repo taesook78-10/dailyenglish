@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daily 3 Lines — 100일 챌린지 (PWA • 모바일 대응)</title>
+  <meta name="theme-color" content="#0b1020" />
+  <!-- PWA: manifest & icons (루트에 manifest.webmanifest, 아이콘 배치 필요) -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <style>
+    :root{ --bg:#0b1020; --card:#111a34; --ink:#e8eefc; --muted:#a7b3d6; --pri:#5b8cff; --good:#21d39b; --warn:#ffb454; --bad:#ff5c7a; --ring:#31457a; --shadow:0 12px 40px rgba(0,0,0,.35); --radius:18px; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, sans-serif;color:var(--ink);background:radial-gradient(80% 60% at 10% 0%,#15224b 0%,#0b1020 60%), radial-gradient(80% 60% at 100% 100%,#0f1834 0%,#0b1020 60%);}  
+    .wrap{max-width:1100px;margin:0 auto;padding:20px}
+    header{display:flex;align-items:center;gap:14px;margin:6px 0 14px;flex-wrap:wrap}
+    h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.2px}
+    .badge{padding:6px 10px;border-radius:999px;background:rgba(91,140,255,.15);color:#cfe0ff;border:1px solid var(--ring);font-size:12px}
+    nav{display:flex; gap:8px; margin:10px 0 16px; flex-wrap:wrap}
+    .tab{padding:10px 14px;border-radius:12px;background:#101733;border:1px solid var(--ring);cursor:pointer;color:var(--muted)}
+    .tab.active{background:#141f45;color:var(--ink);border-color:#3a5296}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+    @media (max-width:960px){.grid{grid-template-columns:1fr;}}
+    .card{background:linear-gradient(180deg,#111a34,#0f1731);border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card h2{font-size:18px;margin:0 0 6px}
+    .card .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 0}
+    .card .body{padding:12px 14px 16px}
+    .title{font-size:26px;font-weight:900;letter-spacing:.3px}
+    .subtitle{font-size:13px;color:var(--muted)}
+    .line{border:1px solid var(--ring);border-radius:14px;padding:12px;margin:8px 0;background:#0f1731}
+    .line p{margin:0 0 8px;font-size:18px;line-height:1.45}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:var(--ink);border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
+    .btn:hover{filter:brightness(1.05)}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+    .btn.pri{background:linear-gradient(180deg,#355bff,#2b4bd4);border-color:#3b57e0}
+    .btn.good{background:#0e3a2a;border-color:#1b7b5b}
+    .btn.warn{background:#3a2a0e;border-color:#9f6b18}
+    .btn.ghost{background:transparent;border-color:#2b3f7a}
+    .score{font-weight:800}
+    .meter{height:10px;background:#0e1330;border-radius:12px;border:1px solid var(--ring);overflow:hidden}
+    .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
+    .kpi{display:flex;gap:8px;flex-wrap:wrap}
+    .kpi .chip{padding:8px 10px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px}
+    .calendar{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+    @media (max-width:520px){ .calendar{grid-template-columns:repeat(7,1fr);} .line p{font-size:16px} .title{font-size:22px}}
+    .day{aspect-ratio:1/1;border:1px dashed #2d3d72;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0e1430;color:#a7b3d6}
+    .day.done{border-style:solid;background:radial-gradient(100% 100% at 30% 20%,rgba(33,211,155,.25),transparent 60%)}
+    .toast{position:fixed;inset:auto 0 18px 0;display:flex;justify-content:center;pointer-events:none}
+    .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
+    .small{font-size:12px;color:var(--muted)}
+    .hint{font-size:12px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:8px 10px;border-radius:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Daily 3 Lines <span class="badge">100일 챌린지 • PWA</span></h1>
+      <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn ghost" id="btnRetry">⟲ 다시 하기</button>
+        <button class="btn warn" id="btnReset">⟲ 전체 초기화</button>
+      </div>
+    </header>
+
+    <nav>
+      <button class="tab active" data-view="home">오늘의 학습</button>
+      <button class="tab" data-view="challenge">챌린지</button>
+      <button class="tab" data-view="progress">기록</button>
+      <div style="margin-left:auto" class="small">TTS 속도 <button class="btn" id="rateDown">–</button> <span id="rate">1.0x</span> <button class="btn" id="rateUp">+</button></div>
+    </nav>
+
+    <section id="home" class="grid">
+      <div class="card">
+        <div class="hd">
+          <div>
+            <div class="subtitle">오늘의 제목 (Day <span id="dayNum">1</span>)</div>
+            <div class="title" id="dayTitle">—</div>
+          </div>
+          <div class="kpi">
+            <div class="chip">평균 점수: <span class="score" id="avgScore">—</span></div>
+            <div class="chip">진행: <span id="progressText">0/3</span></div>
+          </div>
+        </div>
+        <div class="body" id="lines"></div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><h2>오늘의 목표</h2><div class="chip">임계치 80%+</div></div>
+        <div class="body">
+          <div class="meter" title="전체 진행"><i id="meterBar"></i></div>
+          <div style="height:10px"></div>
+          <button class="btn pri" id="markDone" disabled>✔ 오늘 완료로 표시</button>
+          <div style="height:12px"></div>
+          <div class="hint">세 문장을 모두 듣고(▶︎) 말한 뒤(●) 평균 80% 이상이면 완료 버튼이 활성화됩니다.</div>
+          <div style="height:12px"></div>
+          <div class="kpi">
+            <div class="chip">연속일수: <b id="streak">0</b>일</div>
+            <div class="chip">마지막 완료: <span id="lastDone">—</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="challenge" style="display:none">
+      <div class="card">
+        <div class="hd"><h2>100일 챌린지</h2><div class="chip">Day 1 → Day 100</div></div>
+        <div class="body">
+          <div class="calendar" id="challenge100"></div>
+          <div style="height:8px"></div>
+          <div class="small">파란 하이라이트 = 완료일 • 칸을 탭하면 해당 Day로 이동</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="progress" style="display:none">
+      <div class="card">
+        <div class="hd"><h2>점수 기록</h2></div>
+        <div class="body"><div id="history"></div></div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" style="display:none"><span id="toastMsg"></span></div>
+  </div>
+
+<script>
+// =============================
+// 유틸 & 스토리지
+// =============================
+const LS_USER = 'd3l_user';
+const LS_PROGRESS = 'd3l_progress';
+
+function todayKey(){
+  const f = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'});
+  return f.format(new Date());
+}
+function loadUser(){ return JSON.parse(localStorage.getItem(LS_USER)||'{"ttsRate":1,"lang":"en-US"}'); }
+function saveUser(u){ localStorage.setItem(LS_USER, JSON.stringify(u)); }
+function loadProg(){ return JSON.parse(localStorage.getItem(LS_PROGRESS)||'{}'); }
+function saveProg(p){ localStorage.setItem(LS_PROGRESS, JSON.stringify(p)); }
+
+let user = loadUser();
+let prog = loadProg();
+if(!prog._startedAt){ prog._startedAt = todayKey(); saveProg(prog); }
+if(!prog._currentDay){ prog._currentDay = 1; saveProg(prog); }
+
+// 현재 Day 계산: 시작일로부터 경과일 + 1 (최대 100)
+function computeDayFromStart(){
+  const start = new Date(prog._startedAt+'T00:00:00+09:00');
+  const now = new Date();
+  const diff = Math.floor((now - start)/86400000) + 1;
+  return Math.max(1, Math.min(100, diff));
+}
+
+// =============================
+// 고정 콘텐츠 100개 (미국 성인 일상 회화 톤, 랜덤 X)
+// =============================
+const TITLES = [
+  'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
+  'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
+  'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
+  'Coffee Chat','Study Session','Library Visit','Note Taking','Presentation Prep','Public Speaking','Mentor Advice','Goal Setting','Habit Tracking','Budgeting',
+  'Online Shopping','Return/Refund','Customer Service','Travel Plan','Packing','Airport','Hotel Check-in','City Tour','Photo Walk','Museum',
+  'Park Picnic','Beach Day','Hiking','Rainy Day','Snow Day','Heat Wave','Cold Snap','Sick Day','Clinic Visit','Dentist Visit',
+  'Back to Work','Overtime','Deadline Push','Celebration','Thank-you Notes','Apology','Making Plans','Canceling Plans','Running Late','Time Management',
+  'Morning Coffee','Afternoon Slump','Power Nap','Evening Class','Night Drive','Late Snack','Phone Call','Video Call','Texting','Social Media',
+  'Digital Detox','Mindfulness','Journaling','Reading','Music Playlist','Podcast','Language Practice','Networking','Interview Prep','Part-time Job',
+  'Side Project','Coding Session','Design Draft','Feedback Round','Revision','Final Review','Presentation Day','Rest Day','Family Dinner','Friends Hangout',
+  'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
+];
+
+function fixedLines(title){
+  // 제목마다 고정 3문장(템플릿이지만 랜덤 없이 결정적)
+  return [
+    `We talked about ${title.toLowerCase()} today.`,
+    "Nothing fancy—just keeping it simple and practical.",
+    "I’ll try to stay consistent this week."
+  ];
+}
+
+const CONTENT = TITLES.slice(0,100).map((t)=>({ title: t, lines: fixedLines(t) }));
+
+// =============================
+// 음성 합성 / 인식 / 채점
+// =============================
+function speak(text){
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = user.lang||'en-US';
+  utt.rate = user.ttsRate||1;
+  const voices = speechSynthesis.getVoices();
+  const pick = voices.find(v=>/en[-_]?US/i.test(v.lang)) || voices[0];
+  if(pick) utt.voice = pick;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utt);
+}
+
+function createRecognizer(onResult, onEnd){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요. 크롬을 권장합니다.'); return null; }
+  const rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
+  rec.onresult = (e)=>{ const text = e.results[0][0].transcript; onResult(text); };
+  rec.onerror = (e)=>{ toast('음성 인식 오류: '+(e.error||'unknown')); };
+  rec.onend = ()=>{ onEnd && onEnd(); };
+  return rec;
+}
+
+function levenshtein(a,b){
+  const m=a.length, n=b.length; const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i; for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost = a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(
+        dp[i-1][j]+1,
+        dp[i][j-1]+1,
+        dp[i-1][j-1]+cost
+      );
+    }
+  }
+  return dp[m][n];
+}
+function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
+function scoreSentence(ref, hyp){
+  const A = norm(ref), B = norm(hyp);
+  if(!B) return 0;
+  const dist = levenshtein(A,B); const maxLen = Math.max(A.length, B.length)||1;
+  return Math.max(0, Math.round((1 - dist/maxLen)*100));
+}
+
+// =============================
+// UI 요소 참조
+// =============================
+const tabs = document.querySelectorAll('.tab');
+const views = {home: document.getElementById('home'), challenge: document.getElementById('challenge'), progress: document.getElementById('progress')};
+const elTitle = document.getElementById('dayTitle');
+const elDayNum = document.getElementById('dayNum');
+const elLines = document.getElementById('lines');
+const elAvg = document.getElementById('avgScore');
+const elProgText = document.getElementById('progressText');
+const elMeter = document.getElementById('meterBar');
+const elDone = document.getElementById('markDone');
+const elStreak = document.getElementById('streak');
+const elLastDone = document.getElementById('lastDone');
+const elRate = document.getElementById('rate');
+const elToast = document.getElementById('toast');
+const elToastMsg = document.getElementById('toastMsg');
+const btnRetry = document.getElementById('btnRetry');
+const btnReset = document.getElementById('btnReset');
+
+// =============================
+// 탭 전환
+// =============================
+for (const t of tabs){ t.addEventListener('click',()=>{
+  tabs.forEach(b=>b.classList.remove('active')); t.classList.add('active');
+  Object.values(views).forEach(v=>v.style.display='none'); views[t.dataset.view].style.display='';
+  if(t.dataset.view==='challenge') renderChallenge100();
+  if(t.dataset.view==='progress') renderHistory();
+}); }
+
+// =============================
+// 토스트
+// =============================
+let toastTimer; function toast(msg){ clearTimeout(toastTimer); elToastMsg.textContent=msg; elToast.style.display='flex'; toastTimer=setTimeout(()=>elToast.style.display='none', 1800); }
+
+// =============================
+// TTS 속도
+// =============================
+elRate.textContent = (user.ttsRate||1).toFixed(1)+'x';
+
+document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
+document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
+
+// =============================
+// 오늘 렌더링
+// =============================
+function getTodayDay(){
+  const auto = computeDayFromStart();
+  const cur = prog._currentDay || auto;
+  const capped = Math.max(1, Math.min(100, cur));
+  if(prog._currentDay!==capped){ prog._currentDay=capped; saveProg(prog); }
+  return capped;
+}
+
+function ensureDayState(day){
+  const key = 'Day'+day;
+  if(!prog[key]){ prog[key] = { lines:[{heard:false,score:null},{heard:false,score:null},{heard:false,score:null}], done:false, avg:null }; saveProg(prog); }
+  return prog[key];
+}
+
+function renderToday(){
+  const day = getTodayDay();
+  const data = ensureDayState(day);
+  const content = CONTENT[day-1];
+  elDayNum.textContent = day;
+  elTitle.textContent = content.title;
+  elLines.innerHTML='';
+
+  content.lines.forEach((text,i)=>{
+    const line = document.createElement('div'); line.className='line';
+    const p = document.createElement('p'); p.textContent = text; line.appendChild(p);
+    const row = document.createElement('div'); row.className='row';
+
+    const btnPlay = document.createElement('button'); btnPlay.className='btn'; btnPlay.textContent='▶︎ 듣기';
+    btnPlay.onclick=()=>{ speak(text); data.lines[i].heard=true; saveProg(prog); updateProgress(); };
+
+    const btnRec = document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기';
+    const btnStop = document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 정지'; btnStop.disabled=true;
+
+    const scoreBox = document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent = data.lines[i].score!=null? (`점수 ${data.lines[i].score}%`):'';
+
+    let rec=null; btnRec.onclick=()=>{
+      if(rec) return; btnRec.disabled=true; btnStop.disabled=false; toast('말해 보세요…');
+      rec = createRecognizer((hyp)=>{
+        const s = scoreSentence(text, hyp); data.lines[i].score=s; saveProg(prog); scoreBox.textContent = `점수 ${s}%`;
+      },()=>{ btnRec.disabled=false; btnStop.disabled=true; rec=null; updateProgress(); });
+      if(rec) rec.start();
+    };
+    btnStop.onclick=()=>{ if(rec){ rec.stop(); } };
+
+    row.appendChild(btnPlay); row.appendChild(btnRec); row.appendChild(btnStop); row.appendChild(scoreBox);
+    line.appendChild(row);
+    elLines.appendChild(line);
+  });
+
+  updateProgress();
+}
+
+function updateProgress(){
+  const day = getTodayDay(); const d = prog['Day'+day]; if(!d) return;
+  const heardCount = d.lines.filter(x=>x.heard).length; const scored = d.lines.map(x=>x.score||0);
+  const haveScores = d.lines.every(x=>typeof x.score==='number');
+  const avg = haveScores? Math.round(scored.reduce((a,b)=>a+b,0)/3): null;
+  elAvg.textContent = avg!=null? (avg+'%'):'—';
+  elProgText.textContent = `${heardCount}/3`;
+  elMeter.style.width = ((heardCount/3)*100)+'%';
+
+  const pass = haveScores && avg>=80 && heardCount===3;
+  elDone.disabled = !pass;
+  elDone.textContent = pass? '✔ 조건 충족! 오늘 완료하기' : '✔ 오늘 완료로 표시';
+
+  elDone.onclick=()=>{ if(pass){ markDone(day, avg); } };
+}
+
+function markDone(day, avg){
+  const key='Day'+day;
+  prog[key].done = true; prog[key].avg = avg; prog.lastDone = key;
+  const prevKey = 'Day'+(day-1);
+  const prevStreak = prog.streak||0;
+  if(day>1 && prog[prevKey] && prog[prevKey].done){ prog.streak = prevStreak+1; } else { prog.streak = 1; }
+  saveProg(prog);
+  elStreak.textContent = prog.streak;
+  elLastDone.textContent = prog.lastDone;
+  toast('✅ 오늘 학습 완료!');
+  renderChallenge100(); renderHistory();
+}
+
+function initHeaderKPI(){
+  elStreak.textContent = prog.streak||0;
+  elLastDone.textContent = prog.lastDone||'—';
+}
+
+// =============================
+// 100일 챌린지 캘린더
+// =============================
+function renderChallenge100(){
+  const grid = document.getElementById('challenge100');
+  grid.innerHTML='';
+  const cur = getTodayDay();
+  for(let i=1;i<=100;i++){
+    const cell=document.createElement('div');
+    cell.className='day';
+    cell.textContent=i;
+    const key='Day'+i;
+    if(prog[key] && prog[key].done){ cell.classList.add('done'); cell.style.borderColor='#3b82f6'; }
+    if(i===cur){ cell.style.outline='2px solid #5b8cff'; cell.style.color='#e8eefc'; }
+    cell.title = key + (i===cur?' • today':'');
+    cell.onclick = ()=>{ prog._currentDay=i; saveProg(prog); tabs.forEach(b=>{ if(b.dataset.view==='home'){ b.click(); }}); renderToday(); };
+    grid.appendChild(cell);
+  }
+}
+
+// =============================
+// 기록(History)
+// =============================
+function renderHistory(){
+  const box = document.getElementById('history');
+  const entries = Object.entries(prog)
+    .filter(([k,v])=>/^Day\d+$/.test(k) && v && v.avg!=null)
+    .sort((a,b)=> parseInt(a[0].slice(3)) - parseInt(b[0].slice(3)) );
+  if(!entries.length){ box.innerHTML = '<div class="small">아직 기록이 없습니다.</div>'; return; }
+  const frag = document.createDocumentFragment();
+  entries.forEach(([k,v])=>{
+    const div=document.createElement('div'); div.className='line';
+    div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b>${k}</b><span class="score">${v.avg}%</span></div>`;
+    frag.appendChild(div);
+  });
+  box.innerHTML=''; box.appendChild(frag);
+}
+
+// =============================
+// 치트키: 다시 하기 / 초기화
+// =============================
+btnRetry.onclick = ()=>{
+  const day = getTodayDay();
+  prog['Day'+day] = { lines:[{heard:false,score:null},{heard:false,score:null},{heard:false,score:null}], done:false, avg:null };
+  saveProg(prog); renderToday(); toast('🔁 오늘 학습을 초기 상태로 되돌렸어요.');
+};
+
+btnReset.onclick = ()=>{
+  if(!confirm('정말 전체 데이터를 초기화할까요? (취소 불가)')) return;
+  localStorage.removeItem(LS_PROGRESS);
+  prog = loadProg(); prog._startedAt = todayKey(); prog._currentDay = 1; saveProg(prog);
+  initHeaderKPI(); renderToday(); renderChallenge100(); renderHistory();
+  toast('🧹 모든 데이터가 초기화됐어요.');
+};
+
+// =============================
+// PWA: Service Worker 등록
+// =============================
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+// =============================
+// 부팅
+// =============================
+initHeaderKPI();
+renderToday();
+renderChallenge100();
+
+</script>
+
+<!--
+필수 추가 파일 (리포지토리 루트에 생성):
+
+1) manifest.webmanifest
+{
+  "name": "Daily 3 Lines",
+  "short_name": "D3L",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png"}
+  ]
+}
+
+2) sw.js  (아주 단순한 오프라인 캐시)
+const CACHE = 'd3l-v1';
+const ASSETS = [
+  './',
+  './index.html',
+  './icon-192.png',
+  './icon-512.png',
+  './manifest.webmanifest'
+];
+self.addEventListener('install', e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate', e=>{
+  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e=>{
+  e.respondWith(
+    caches.match(e.request).then(res=> res || fetch(e.request).then(r=>{
+      const copy = r.clone();
+      caches.open(CACHE).then(c=>c.put(e.request, copy));
+      return r;
+    }).catch(()=>caches.match('./index.html')))
+  );
+});
+
+3) 아이콘 파일
+- icon-192.png, icon-512.png (임시로 아무 정사각 PNG 사용 가능)
+-->
+
+</body>
+</html>
