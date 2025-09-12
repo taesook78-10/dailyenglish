@@ -1,4 +1,4 @@
- const CACHE = 'd3l-v10';
+ const CACHE = 'd3l-v12';
    const ASSETS = [
      '/dailyenglish/',
      '/dailyenglish/index.html',
@@ -11,6 +11,7 @@
    ];
    // install/activate/fetch 로직은 기존과 동일
 -->
+
 
 
 
