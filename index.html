@@ -35,6 +35,7 @@
   .line p{margin:0 0 6px;font-size:18px;line-height:1.45}
   .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5; display:block !important;}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
   .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
   .btn:hover{filter:brightness(1.05)}
   .btn[disabled]{opacity:.6;cursor:not-allowed}
@@ -42,6 +43,7 @@
   .btn.warn{background:#3a2a0e;border-color:#9f6b18}
   .btn.ghost{background:transparent;border-color:#2b3f7a}
   .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
+
   .score{font-weight:800}
   .meter{height:10px;background:#0e1330;border-radius:12px;border:1px solid var(--ring);overflow:hidden}
   .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
@@ -55,6 +57,8 @@
   .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
   .small{font-size:12px;color:#a7b3d6}
   .hint{font-size:12px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:8px 10px;border-radius:10px}
+
+  /* 연속 말하기 패널 */
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:9999;}
   .practice .box{width:min(720px,94vw); background:#101733; border:1px solid var(--ring); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
   .practice .box h3{margin:0 0 10px; font-size:18px;}
@@ -62,6 +66,7 @@
   .practice .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
   .practice .result{margin-top:10px; padding:10px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
   .feedback{display:block; font-size:12px; color:#cfe0ff; opacity:.95}
+
   /* 진단 배지 숨김 */
   #diagSupport, #diagVoices { display:none !important; }
   </style>
@@ -69,7 +74,11 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Daily 3 Lines <span class="badge">100일 챌린지</span></h1>
+      <h1>Daily 3 Lines
+        <span class="badge">100일 챌린지</span>
+        <span id="diagSupport" class="badge">TTS: —</span>
+        <span id="diagVoices" class="badge">voices: —</span>
+      </h1>
       <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap">
         <button class="btn ghost" id="btnRetry">⟲ 다시 하기</button>
         <button class="btn warn" id="btnReset">⟲ 전체 초기화</button>
@@ -144,7 +153,7 @@
   </div>
 
 <script>
-// ===== 로컬 스토리지 =====
+// ===== 스토리지 =====
 const LS_USER='d3l_user', LS_PROGRESS='d3l_progress';
 function todayKey(){ const f = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}); return f.format(new Date()); }
 function loadUser(){ return JSON.parse(localStorage.getItem(LS_USER)||'{"ttsRate":1,"lang":"en-US","voiceURI":""}'); }
@@ -157,7 +166,7 @@ if(!prog._currentDay){ prog._currentDay=1; saveProg(prog); }
 if(!Array.isArray(prog._history)) { prog._history = []; saveProg(prog); }
 function computeDayFromStart(){ const start = new Date(prog._startedAt+'T00:00:00+09:00'); return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1)); }
 
-// ===== 제목 & 문장 템플릿(영/한) =====
+// ===== 데이터(제목/문장) =====
 const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
   'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
   'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
@@ -226,7 +235,7 @@ function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0;
 function tokenize(s){ return norm(s).split(' ').filter(Boolean); }
 function wordDiffFeedback(ref, hyp){ const R=tokenize(ref), H=tokenize(hyp); if(!H.length) return ['조금 더 크게, 또렷하게 말해줘요!']; const setH=new Set(H); const tips=[]; const missing=R.filter(w=>!setH.has(w)); if(missing.length>=2) tips.push('단어 몇 개 빠졌어요 (전체 끝까지 말하기).'); if(H.length <= Math.max(2, Math.floor(R.length*0.6))) tips.push('말이 너무 짧아요. 전체 문장을 끝까지 말해보세요.'); const endsS=R.filter(w=>/^[a-z]+s$/.test(w)); if(endsS.some(w=>!H.includes(w))) tips.push('복수형/3인칭 단수 -s 소리를 살려요.'); const endsED=R.filter(w=>/^[a-z]+ed$/.test(w)); if(endsED.some(w=>!H.includes(w))) tips.push('과거형 -ed 발음 점검!'); if(/th/.test(norm(ref)) && !/th/.test(norm(hyp))) tips.push('th(θ/ð) 혀끝 소리 주의!'); if(/[rl]/.test(norm(ref)) && !/[rl]/.test(norm(hyp))) tips.push('R/L 구분 또렷하게!'); if(/v/.test(norm(ref)) && /b/.test(norm(hyp))) tips.push('v(아랫입술+윗이) vs b 구분!'); if(tips.length<=1) tips.push('억양을 살려 자연스럽게 읽어보세요.'); return tips.slice(0,2); }
 
-// ===== UI 참조 =====
+// ===== UI =====
 const tabs=document.querySelectorAll('.tab');
 const views={home:document.getElementById('home'),challenge:document.getElementById('challenge'),progress:document.getElementById('progress')};
 const elTitle=document.getElementById('dayTitle'); const elDayNum=document.getElementById('dayNum'); const elLines=document.getElementById('lines');
@@ -235,7 +244,6 @@ const elDone=document.getElementById('markDone'); const elStreak=document.getEle
 const elRate=document.getElementById('rate'); const elToast=document.getElementById('toast'); const elToastMsg=document.getElementById('toastMsg');
 const btnRetry=document.getElementById('btnRetry'); const btnReset=document.getElementById('btnReset');
 
-// 탭
 for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classList.remove('active')); t.classList.add('active');
   Object.values(views).forEach(v=>v.style.display='none'); views[t.dataset.view].style.display='';
   if(t.dataset.view==='challenge') renderChallenge100();
@@ -245,7 +253,7 @@ for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classL
 // 토스트
 let toastTimer; function toast(msg){ clearTimeout(toastTimer); elToastMsg.textContent=msg; elToast.style.display='flex'; toastTimer=setTimeout(()=>elToast.style.display='none', 1800); }
 
-// TTS 속도
+// 속도
 elRate.textContent=(user.ttsRate||1).toFixed(1)+'x';
 document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
@@ -258,7 +266,7 @@ function ensureDayState(day){
   return prog[k];
 }
 
-// ===== 오늘 화면 렌더 =====
+// ===== 렌더 =====
 function renderToday(){
   const day=getTodayDay(); const data=ensureDayState(day); const title=TITLES[day-1];
   const pairs=randomLinesBilingual(title);
@@ -278,7 +286,7 @@ function renderToday(){
     btnPlay.onclick=()=>{ speak(text); data.lines[i].heard=true; saveProg(prog); updateProgress(); };
 
     const btnRec=document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기(연습)';
-    const btnStop=document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 정지'; btnStop.disabled=true;
+    const btnStop=document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 중지'; btnStop.disabled=true;
     if(!sttSupported){ btnRec.disabled=true; btnStop.disabled=true; btnRec.title='이 기기에서는 음성 인식이 제한됩니다.'; }
 
     const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent='';
@@ -294,7 +302,6 @@ function renderToday(){
         const hyp=e.results[0][0].transcript;
         const s=scoreSentence(text,hyp);
         const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hyp);
-        // 연습: 저장 반영 없음
         scoreBox.textContent=`연습 점수 ${s}%`;
         fbBox.textContent=fb.join(' · ');
       },()=>{ btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; });
@@ -330,7 +337,6 @@ function renderToday(){
   updateProgress();
 }
 
-// ===== 진행/완료 업데이트 =====
 function updateProgress(){
   const day=getTodayDay(); const d=prog['Day'+day]; if(!d) return;
   const heard=d.lines.filter(x=>x.heard).length;
@@ -367,7 +373,7 @@ function initHeaderKPI(){
   document.getElementById('lastDone').textContent = prog.lastDone||'—';
 }
 
-// ===== 3문장 연속 말하기(점수 반영) =====
+// ===== 3문장 연속 말하기(점수 반영) — 여러 번 시도 가능, 닫을 때 최종 반영 =====
 function concatenateLines(lines){ return lines.join(' '); }
 
 function practiceReciteOneShot_final(lines, triggerBtn){
@@ -393,7 +399,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     <div class="meta">
       <button class="btn pri" id="btnStart">● 말하기 시작</button>
       <button class="btn" id="btnStop" disabled>■ 중지</button>
-      <span class="small">시작을 누르면 녹음이 시작되고, 종합 점수가 반영됩니다.</span>
+      <span class="small">여러 번 시도해도 됩니다. <b>닫기</b> 버튼을 누른 시점의 점수가 반영됩니다.</span>
     </div>
     <div class="result" id="resultBox" style="display:none">
       <div>종합 점수: <b id="sumScore">—</b></div>
@@ -409,7 +415,10 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   const sumScore = box.querySelector('#sumScore');
   const sumFb    = box.querySelector('#sumFb');
 
+  // 반복 시도를 위한 상태
   let finalText = '';
+  let lastScore = null;       // ← 패널을 닫을 때 이 값을 저장
+  let lastFb    = '';
   let rec=null;
 
   function resetStartUI(){
@@ -425,27 +434,28 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     }
   }
   function onEnd(){
+    // 시도 1회 종료 → 점수 계산만 표시(저장은 하지 않음)
     const refAll = concatenateLines(lines);
     const sc = scoreSentence(refAll, finalText);
     const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
-    sumScore.textContent = isNaN(sc)? '—' : (sc + '%');
-    sumFb.textContent = fb.join(' · ');
+    lastScore = isNaN(sc)? null : sc;   // ← 마지막 점수 보관
+    lastFb    = fb.join(' · ');
+    sumScore.textContent = (lastScore==null)? '—' : (lastScore + '%');
+    sumFb.textContent = lastFb;
     resultBox.style.display = '';
 
-    const day=getTodayDay(); const d=ensureDayState(day);
-    d.comboScore = isNaN(sc)? null : sc; saveProg(prog);
-    updateProgress();
-
+    // 다음 시도를 위해 UI 리셋
     btnStop.disabled = true; btnStop.textContent = '중지됨';
-    restoreTrigger();
     resetStartUI();
+    rec=null; finalText='';
   }
 
   btnStart.onclick = ()=>{
     if(rec) return;
     if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
     btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
-    btnStop.disabled=false;
+    btnStop.disabled=false; btnStop.textContent='■ 중지';
+    finalText='';
 
     rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
     if(rec) rec.start();
@@ -455,20 +465,26 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   btnStop.onclick = ()=>{
     if(rec){ try{ rec.stop(); }catch(_){ } }
     btnStop.disabled = true; btnStop.textContent = '중지됨';
-    // 즉시 UI 원복
-    restoreTrigger();
-    resetStartUI();
+    // start 버튼은 onEnd에서 다시 활성화
   };
 
   box.querySelector('#btnClosePanel').onclick = ()=>{
     try{ if(rec) rec.abort(); }catch(_){}
     document.body.removeChild(wrap);
     restoreTrigger();
-    resetStartUI();
+    // ← 이 시점의 마지막 점수를 저장/반영
+    if(lastScore!=null){
+      const day=getTodayDay(); const d=ensureDayState(day);
+      d.comboScore = lastScore; saveProg(prog);
+      updateProgress();
+      toast(`종합 점수 ${lastScore}% 반영 완료`);
+    } else {
+      toast('점수 없이 닫았습니다.');
+    }
   };
 }
 
-// ===== 100일 챌린지 렌더 =====
+// ===== 100일 캘린더 =====
 function renderChallenge100(){
   const grid=document.getElementById('challenge100'); grid.innerHTML='';
   const cur=getTodayDay();
@@ -511,7 +527,7 @@ document.getElementById('btnReset').onclick=()=>{ if(!confirm('정말 전체 데
   initHeaderKPI(); renderToday(); renderChallenge100(); renderHistory(); toast('🧹 모든 데이터가 초기화됐어요.');
 };
 
-// ===== PWA 등록 =====
+// ===== PWA =====
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
 // ===== 부팅 =====
@@ -522,9 +538,9 @@ boot();
 </script>
 
 <!--
-참고:
-- manifest.webmanifest, sw.js 파일을 프로젝트 루트(/dailyenglish/)에 둡니다.
-- 서비스워커 캐시가 남아 이전 코드가 보이면 sw.js 캐시 키를 올려주세요.
+필수 파일:
+- manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=9)
+- sw.js  (오프라인 캐시; 새 코드 강제적용 위해 캐시키 업데이트 권장)
 -->
 </body>
 </html>
