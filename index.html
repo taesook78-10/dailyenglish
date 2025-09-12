@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Daily 3 Lines — 100일 챌린지 (랜덤 문장·TTS/STT/점수)</title>
+  <title>Daily 3 Lines — 100일 챌린지 (Android TTS Fix · 랜덤3문장 · TTS/STT/점수)</title>
   <meta name="theme-color" content="#0b1020" />
   <!-- PWA -->
   <link rel="manifest" href="./manifest.webmanifest" />
@@ -49,14 +49,14 @@
     .day.done{border-style:solid;background:radial-gradient(100% 100% at 30% 20%,rgba(33,211,155,.25),transparent 60%)}
     .toast{position:fixed;inset:auto 0 18px 0;display:flex;justify-content:center;pointer-events:none}
     .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
-    .small{font-size:12px;color:var(--muted)}
+    .small{font-size:12px;color:#a7b3d6}
     .hint{font-size:12px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:8px 10px;border-radius:10px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>Daily 3 Lines <span class="badge">100일 챌린지 • 랜덤 문장</span></h1>
+      <h1>Daily 3 Lines <span class="badge">100일 챌린지 • Android TTS Fix</span></h1>
       <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap">
         <button class="btn ghost" id="btnRetry">⟲ 다시 하기</button>
         <button class="btn warn" id="btnReset">⟲ 전체 초기화</button>
@@ -200,30 +200,49 @@ function randomLines(title){
 }
 
 // =============================
-// TTS(듣기) — 모바일 안정화 + 연속 듣기
+// TTS(듣기) — ANDROID 안정화
 // =============================
 let voices = [];
 function loadVoices(){ try{ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }catch(e){ voices=[]; } }
+function waitForVoices(timeout=1500){
+  return new Promise((resolve)=>{
+    if (!('speechSynthesis' in window)) return resolve();
+    loadVoices();
+    if (voices && voices.length) return resolve();
+    const t0 = Date.now();
+    const handler = ()=>{ loadVoices(); if (voices.length || Date.now()-t0>timeout){ speechSynthesis.removeEventListener('voiceschanged', handler); resolve(); } };
+    speechSynthesis.addEventListener('voiceschanged', handler);
+    // 보수적으로 타임아웃 보장
+    setTimeout(handler, timeout);
+  });
+}
 if('speechSynthesis' in window){
   loadVoices();
   window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
 }
-function ensureSpeechReady(){
-  try{ if (speechSynthesis.paused) speechSynthesis.resume(); }catch(_){}
-}
-function speakOnce(text){
-  return new Promise((resolve)=>{
+// 사용자 제스처/복귀 시 resume
+function resumeTTS(){ try{ if ('speechSynthesis' in window && speechSynthesis.paused) speechSynthesis.resume(); }catch(_){} }
+window.addEventListener('pointerdown', resumeTTS, { once:true });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') resumeTTS(); });
+
+function speakOnce(text) {
+  return new Promise(async (resolve)=>{
+    if (!('speechSynthesis' in window)) return resolve();
+    await waitForVoices(); // Android에서 첫 재생 전에 보이스 확보
+    resumeTTS();
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = user.lang || 'en-US';
     utt.rate = user.ttsRate || 1;
     const v = voices.find(x=>/en[-_]?US/i.test(x.lang)) || voices[0];
-    if(v) utt.voice = v;
-    utt.onend = ()=>resolve();
-    try{ speechSynthesis.cancel(); }catch(_){}
-    ensureSpeechReady();
-    speechSynthesis.speak(utt);
+    if (v) utt.voice = v;
+    utt.onend = ()=> resolve();
+    // 현재 말하는 중이면 정리
+    try{ if (speechSynthesis.speaking) speechSynthesis.cancel(); }catch(_){}
+    // Android 일부 기기에서 바로 speak가 무시되는 이슈 대비 0ms 지연
+    setTimeout(()=> speechSynthesis.speak(utt), 0);
   });
 }
+
 async function speakQueue(arr, onStart, onEnd){
   try{
     onStart && onStart();
@@ -232,17 +251,14 @@ async function speakQueue(arr, onStart, onEnd){
     onEnd && onEnd();
   }
 }
-function speak(text){
-  // 단일 문장용 (버튼)
-  speakQueue([text]);
-}
+function speak(text){ return speakQueue([text]); }
 
 // =============================
 // STT(말하기) & 채점
 // =============================
 function createRecognizer(onResult, onEnd){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요. 크롬/안드로이드 권장.'); return null; }
+  if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요. (Android Chrome 권장)'); return null; }
   const rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
   rec.onresult = (e)=>{ const text = e.results[0][0].transcript; onResult(text); };
   rec.onerror = (e)=>{ toast('음성 인식 오류: '+(e.error||'unknown')); };
@@ -497,7 +513,7 @@ renderChallenge100();
 }
 
 2) sw.js  (간단 오프라인 캐시)
-const CACHE = 'd3l-v1';
+const CACHE = 'd3l-v2'; // <-- 캐시버전 업데이트로 모바일 캐시 강제 갱신
 const ASSETS = ['./','./index.html','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
 self.addEventListener('install', e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
