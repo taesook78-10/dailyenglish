@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -27,7 +29,7 @@
   nav{display:flex; gap:8px; margin:10px 0 16px; flex-wrap:wrap; align-items:center}
   .tab{padding:10px 14px;border-radius:12px;background:#101733;border:1px solid var(--ring);cursor:pointer;color:#a7b3d6}
   .tab.active{background:#141f45;color:var(--ink);border-color:#3a5296}
-  select{appearance:none;background:#101733;border:1px solid var(--ring);color:var(--ink);padding:8px 10px;border-radius:10px;min-height:40px}
+  select{appearance:none;background:#101733;border:1px solid var(--ring);color:#e8eefc;padding:8px 10px;border-radius:10px;min-height:40px}
   .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
   @media (max-width:960px){.grid{grid-template-columns:1fr;}}
   .card{background:linear-gradient(180deg,#111a34,#0f1731);border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -40,12 +42,16 @@
   .line p{margin:0 0 6px;font-size:18px;line-height:1.45}
   .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5; display:block !important;}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:var(--ink);border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
+
+  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
   .btn:hover{filter:brightness(1.05)}
   .btn[disabled]{opacity:.6;cursor:not-allowed}
   .btn.pri{background:linear-gradient(180deg,#355bff,#2b4bd4);border-color:#3b57e0}
   .btn.warn{background:#3a2a0e;border-color:#9f6b18}
   .btn.ghost{background:transparent;border-color:#2b3f7a}
+  /* ▶ 공통 녹음 중 스타일 */
+  .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
+
   .score{font-weight:800}
   .meter{height:10px;background:#0e1330;border-radius:12px;border:1px solid var(--ring);overflow:hidden}
   .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
@@ -59,6 +65,7 @@
   .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
   .small{font-size:12px;color:#a7b3d6}
   .hint{font-size:12px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:8px 10px;border-radius:10px}
+
   /* 연속 말하기 연습 패널 */
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:9999;}
   .practice .box{width:min(680px,92vw); background:#101733; border:1px solid var(--ring); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
@@ -394,16 +401,29 @@ function renderToday(){
     const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent=data.lines[i].score!=null?(`점수 ${data.lines[i].score}%`):'';
     const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent = (data.lines[i].fb||[]).join(' · ');
 
-    let rec=null; btnRec.onclick=()=>{ if(rec||!sttSupported) return; btnRec.disabled=true; btnStop.disabled=false; toast('말해 보세요…');
+    let rec=null;
+
+    // ▶ 줄별 말하기 상태 UI
+    function setRecUI(active){
+      if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…'; }
+      else{ btnRec.classList.remove('rec'); btnRec.textContent='● 말하기'; }
+    }
+
+    btnRec.onclick=()=>{ 
+      if(rec||!sttSupported) return; 
+      btnRec.disabled=true; btnStop.disabled=false; setRecUI(true); toast('말해 보세요…');
       rec=createRecognizer((hyp)=>{
         const s=scoreSentence(text,hyp);
         const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hyp);
         data.lines[i].score=s; data.lines[i].fb=fb; saveProg(prog);
         scoreBox.textContent=`점수 ${s}%`;
         fbBox.textContent=fb.join(' · ');
-      },()=>{ btnRec.disabled=false; btnStop.disabled=true; rec=null; updateProgress(); });
+      },()=>{ 
+        btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; updateProgress(); 
+      });
       if(rec) rec.start();
     };
+
     btnStop.onclick=()=>{ if(rec){ rec.stop(); } };
 
     row.appendChild(btnPlay); row.appendChild(btnRec); row.appendChild(btnStop); row.appendChild(scoreBox);
@@ -415,16 +435,17 @@ function renderToday(){
   const allRow=document.createElement('div'); allRow.className='row';
 
   const btnAll=document.createElement('button');
-  btnAll.className='btn'; // 기본색
+  btnAll.className='btn';
   btnAll.textContent='▶︎ 3문장 연속 듣기';
   btnAll.onclick=()=> speakQueue(pairs.map(x=>x.en), ()=>{btnAll.disabled=true; btnAll.textContent='▶︎ 재생 중…';}, ()=>{btnAll.disabled=false; btnAll.textContent='▶︎ 3문장 연속 듣기';});
   allRow.appendChild(btnAll);
 
   const btnRecAll=document.createElement('button');
-  btnRecAll.className='btn pri'; // 파란 프라이머리
+  btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(연습)';
   if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
-  btnRecAll.onclick=()=> practiceRecite(pairs.map(x=>x.en)); // 점수/기록 반영 안 함
+  // ▶ 트리거 버튼을 함께 전달하여 UI 동기화
+  btnRecAll.onclick=()=> practiceRecite(pairs.map(x=>x.en), btnRecAll);
   allRow.appendChild(btnRecAll);
 
   elLines.appendChild(allRow);
@@ -467,9 +488,17 @@ function initHeaderKPI(){
 }
 
 // ===== 3문장 연속 말하기(연습) =====
-async function practiceRecite(lines){
+async function practiceRecite(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요.'); return; }
+
+  // 트리거 버튼 UI: 시작
+  const origText = triggerBtn ? triggerBtn.textContent : '';
+  if(triggerBtn){
+    triggerBtn.classList.add('rec');
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = '● 연속 말하기 중…';
+  }
 
   // 패널 UI
   const wrap=document.createElement('div'); wrap.className='practice';
@@ -492,24 +521,32 @@ async function practiceRecite(lines){
   box.appendChild(list); box.appendChild(row); wrap.appendChild(box); document.body.appendChild(wrap);
 
   // 순차 인식 (기록/진행 미반영)
-  for(let i=0;i<lines.length;i++){
-    const ref = lines[i];
-    items[i].querySelector('.hyp').textContent = '🎙️ 듣는 중… 자연스럽게 말해 보세요.';
-    try{
-      const hyp = await recognizeOnce();
-      const sc = scoreSentence(ref, hyp);
-      const fbs = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(ref, hyp);
-      // ✅ 괄호 누락 수정
-      items[i].querySelector('.hyp').textContent = '🗣️ ' + (hyp || '(인식 실패)');
-      items[i].querySelector('.sc').textContent = isNaN(sc)? '—' : (sc + '%');
-      items[i].querySelector('.feedback').textContent = fbs.join(' · ');
-    }catch(e){
-      items[i].querySelector('.hyp').textContent = '⚠️ 인식 오류';
-      items[i].querySelector('.sc').textContent = '—';
-      items[i].querySelector('.feedback').textContent = '마이크 상태 또는 주변 소음을 확인해 주세요.';
+  try{
+    for(let i=0;i<lines.length;i++){
+      const ref = lines[i];
+      items[i].querySelector('.hyp').textContent = '🎙️ 듣는 중… 자연스럽게 말해 보세요.';
+      try{
+        const hyp = await recognizeOnce();
+        const sc = scoreSentence(ref, hyp);
+        const fbs = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(ref, hyp);
+        items[i].querySelector('.hyp').textContent = '🗣️ ' + (hyp || '(인식 실패)');
+        items[i].querySelector('.sc').textContent = isNaN(sc)? '—' : (sc + '%');
+        items[i].querySelector('.feedback').textContent = fbs.join(' · ');
+      }catch(e){
+        items[i].querySelector('.hyp').textContent = '⚠️ 인식 오류';
+        items[i].querySelector('.sc').textContent = '—';
+        items[i].querySelector('.feedback').textContent = '마이크 상태 또는 주변 소음을 확인해 주세요.';
+      }
+    }
+    toast('연습이 끝났어요! (점수/피드백은 기록에 반영되지 않음)');
+  } finally {
+    // 트리거 버튼 UI: 종료/원복
+    if(triggerBtn){
+      triggerBtn.classList.remove('rec');
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = origText || '● 3문장 연속 말하기(연습)';
     }
   }
-  toast('연습이 끝났어요! (점수/피드백은 기록에 반영되지 않음)');
 }
 
 // ===== 100일 챌린지 캘린더 =====
@@ -578,20 +615,8 @@ boot();
 <!--
 필수 추가 파일 (리포지토리 루트):
 
-1) manifest.webmanifest  (아이콘 포함, 링크는 /dailyenglish/manifest.webmanifest?v=8)
-2) sw.js  (오프라인 캐시; 새 버전 반영 위해 캐시키를 d3l-v8처럼 증가 권장)
-   예)
-   const CACHE = 'd3l-v8';
-   const ASSETS = [
-     '/dailyenglish/',
-     '/dailyenglish/index.html',
-     '/dailyenglish/manifest.webmanifest?v=8',
-     '/dailyenglish/icon-180.png',
-     '/dailyenglish/icon-192.png',
-     '/dailyenglish/icon-512.png',
-     '/dailyenglish/icon-192-maskable.png',
-     '/dailyenglish/icon-512-maskable.png'
-   ];
+1) manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=8)
+2) sw.js  (오프라인 캐시; 새 버전 반영 위해 캐시키 d3l-v8 권장)
 -->
 </body>
 </html>
