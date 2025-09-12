@@ -1,4 +1,4 @@
-const CACHE = 'd3l-v1';
+const CACHE = 'd3l-v2'; // <-- 캐시버전 업데이트로 모바일 캐시 강제 갱신
 const ASSETS = ['./','./index.html','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
 self.addEventListener('install', e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
