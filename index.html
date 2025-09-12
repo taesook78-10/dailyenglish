@@ -37,7 +37,8 @@
   .title{font-size:26px;font-weight:900;letter-spacing:.3px}
   .subtitle{font-size:13px;color:var(--muted)}
   .line{border:1px solid var(--ring);border-radius:14px;padding:12px;margin:8px 0;background:#0f1731}
-  .line p{margin:0 0 8px;font-size:18px;line-height:1.45}
+  .line p{margin:0 0 6px;font-size:18px;line-height:1.45}
+  .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:var(--ink);border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
   .btn:hover{filter:brightness(1.05)}
@@ -166,7 +167,7 @@ if(!prog._currentDay){ prog._currentDay=1; saveProg(prog); }
 if(!Array.isArray(prog._history)) { prog._history = []; saveProg(prog); }
 function computeDayFromStart(){ const start = new Date(prog._startedAt+'T00:00:00+09:00'); return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1)); }
 
-// ===== 제목/랜덤 문장 =====
+// ===== 제목/랜덤 문장 (영·한 템플릿) =====
 const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
   'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
   'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
@@ -179,11 +180,40 @@ const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeti
   'Side Project','Coding Session','Design Draft','Feedback Round','Revision','Final Review','Presentation Day','Rest Day','Family Dinner','Friends Hangout',
   'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
 ];
-const L1=[(t)=>`I spent some time on ${t} today.`,(t)=>`I worked on ${t} a bit this morning.`,(t)=>`We focused on ${t} for a while today.`,(t)=>`I finally got around to ${t}.`,(t)=>`I checked in on ${t} after work.`];
-const L2=[()=>`Nothing fancy—just keeping things simple.`,()=>`It took longer than I expected, to be honest.`,()=>`It was casual but really helpful.`,()=>`It wasn’t perfect, but it was progress.`,()=>`I tried to keep it practical and not overthink it.`];
-const L3=[()=>`I'll try to be more consistent this week.`,()=>`Next time, I'll plan ahead and keep it easy.`,()=>`I'm glad we're on the same page now.`,()=>`Small wins still count.`,()=>`Slow and steady works for me.`];
-function pick(a){return a[Math.floor(Math.random()*a.length)];}
-function randomLines(title){const t=title.toLowerCase(); return [pick(L1)(t), pick(L2)(), pick(L3)()];}
+
+const L1 = [
+  { en:(t)=>`I spent some time on ${t} today.`, ko:(t)=>`오늘 ${t}에 시간을 좀 썼어요.` },
+  { en:(t)=>`I worked on ${t} a bit this morning.`, ko:(t)=>`오늘 아침에 ${t}를 조금 했어요.` },
+  { en:(t)=>`We focused on ${t} for a while today.`, ko:(t)=>`오늘 ${t}에 잠시 집중했어요.` },
+  { en:(t)=>`I finally got around to ${t}.`, ko:(t)=>`드디어 ${t}를 하게 됐어요.` },
+  { en:(t)=>`I checked in on ${t} after work.`, ko:(t)=>`퇴근하고 ${t}를 잠깐 살펴봤어요.` }
+];
+const L2 = [
+  { en:()=>`Nothing fancy—just keeping things simple.`, ko:()=>`대단한 건 없고—그냥 심플하게 했어요.` },
+  { en:()=>`It took longer than I expected, to be honest.`, ko:()=>`솔직히 생각보다 시간이 좀 걸렸어요.` },
+  { en:()=>`It was casual but really helpful.`, ko:()=>`가볍게 했지만 꽤 도움이 됐어요.` },
+  { en:()=>`It wasn’t perfect, but it was progress.`, ko:()=>`완벽하진 않았지만, 진전은 있었어요.` },
+  { en:()=>`I tried to keep it practical and not overthink it.`, ko:()=>`실용적으로, 너무 고민하지 않으려 했어요.` }
+];
+const L3 = [
+  { en:()=>`I'll try to be more consistent this week.`, ko:()=>`이번 주엔 더 꾸준히 해볼게요.` },
+  { en:()=>`Next time, I'll plan ahead and keep it easy.`, ko:()=>`다음엔 미리 계획하고 쉽게 가볼게요.` },
+  { en:()=>`I'm glad we're on the same page now.`, ko:()=>`이제 생각이 맞아서 다행이에요.` },
+  { en:()=>`Small wins still count.`, ko:()=>`작은 성취도 의미 있어요.` },
+  { en:()=>`Slow and steady works for me.`, ko:()=>`천천히 꾸준히가 제 스타일이에요.` }
+];
+
+function pickIdx(a){ return Math.floor(Math.random()*a.length); }
+function randomLinesBilingual(title){
+  const t = title.toLowerCase();
+  const i1 = pickIdx(L1), i2 = pickIdx(L2), i3 = pickIdx(L3);
+  const s1 = L1[i1], s2 = L2[i2], s3 = L3[i3];
+  return [
+    { en: s1.en(t), ko: s1.ko(t) },
+    { en: s2.en(),  ko: s2.ko()  },
+    { en: s3.en(),  ko: s3.ko()  }
+  ];
+}
 
 // ===== TTS(듣기) — ANDROID 안정화 + Voice 선택 =====
 let voices=[];
@@ -340,13 +370,17 @@ function getTodayDay(){ const auto=computeDayFromStart(); const cur=prog._curren
 function ensureDayState(day){ const k='Day'+day; if(!prog[k]){ prog[k]={ lines:[{heard:false,score:null,fb:[]},{heard:false,score:null,fb:[]},{heard:false,score:null,fb:[]}], done:false, avg:null }; saveProg(prog);} return prog[k]; }
 
 function renderToday(){
-  const day=getTodayDay(); const data=ensureDayState(day); const title=TITLES[day-1]; const lines=randomLines(title);
+  const day=getTodayDay(); const data=ensureDayState(day); const title=TITLES[day-1];
+  const pairs=randomLinesBilingual(title); // [{en,ko},{en,ko},{en,ko}]
   elDayNum.textContent=day; elTitle.textContent=title; elLines.innerHTML='';
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const sttSupported=!!SR;
 
-  lines.forEach((text,i)=>{
+  pairs.forEach((pair,i)=>{
+    const text = pair.en;
     const line=document.createElement('div'); line.className='line';
-    const p=document.createElement('p'); p.textContent=text; line.appendChild(p);
+    const pEn=document.createElement('p'); pEn.textContent=text; line.appendChild(pEn);
+    const pKo=document.createElement('p'); pKo.textContent=pair.ko; pKo.className='ko'; line.appendChild(pKo);
+
     const row=document.createElement('div'); row.className='row';
 
     const btnPlay=document.createElement('button'); btnPlay.className='btn'; btnPlay.textContent='▶︎ 듣기';
@@ -362,7 +396,7 @@ function renderToday(){
     let rec=null; btnRec.onclick=()=>{ if(rec||!sttSupported) return; btnRec.disabled=true; btnStop.disabled=false; toast('말해 보세요…');
       rec=createRecognizer((hyp)=>{
         const s=scoreSentence(text,hyp);
-        const fb=wordDiffFeedback(text,hyp);
+        const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hyp);
         data.lines[i].score=s; data.lines[i].fb=fb; saveProg(prog);
         scoreBox.textContent=`점수 ${s}%`;
         fbBox.textContent=fb.join(' · ');
@@ -379,20 +413,18 @@ function renderToday(){
   // 3문장 연속 듣기 & 3문장 연속 말하기(연습)
   const allRow=document.createElement('div'); allRow.className='row';
 
-  // ▼▼▼ 요청대로 색 교체: 듣기 = 기본(btn), 말하기(연습) = 프라이머리(btn pri)
   const btnAll=document.createElement('button');
   btnAll.className='btn'; // 기본색
   btnAll.textContent='▶︎ 3문장 연속 듣기';
-  btnAll.onclick=()=> speakQueue(lines, ()=>{btnAll.disabled=true; btnAll.textContent='▶︎ 재생 중…';}, ()=>{btnAll.disabled=false; btnAll.textContent='▶︎ 3문장 연속 듣기';});
+  btnAll.onclick=()=> speakQueue(pairs.map(x=>x.en), ()=>{btnAll.disabled=true; btnAll.textContent='▶︎ 재생 중…';}, ()=>{btnAll.disabled=false; btnAll.textContent='▶︎ 3문장 연속 듣기';});
   allRow.appendChild(btnAll);
 
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri'; // 파란 프라이머리
   btnRecAll.textContent='● 3문장 연속 말하기(연습)';
   if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
-  btnRecAll.onclick=()=> practiceRecite(lines); // 점수/기록 반영 안 함
+  btnRecAll.onclick=()=> practiceRecite(pairs.map(x=>x.en)); // 점수/기록 반영 안 함
   allRow.appendChild(btnRecAll);
-  // ▲▲▲ 교체 완료
 
   elLines.appendChild(allRow);
 
@@ -465,7 +497,7 @@ async function practiceRecite(lines){
     try{
       const hyp = await recognizeOnce();
       const sc = scoreSentence(ref, hyp);
-      const fbs = wordDiffFeedback(ref, hyp);
+      const fbs = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(ref, hyp);
       items[i].querySelector('.hyp').textContent = '🗣️ ' + (hyp || '(인식 실패)');
       items[i].querySelector('.sc').textContent = isNaN(sc)? '—' : (sc + '%');
       items[i].querySelector('.feedback').textContent = fbs.join(' · ');
@@ -562,3 +594,5 @@ const ASSETS = [
 </body>
 </html>
 
+   
+ 
