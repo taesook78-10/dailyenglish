@@ -126,7 +126,7 @@
           <div class="hint">세 문장을 모두 듣고(▶︎) <b>3문장 연속 말하기(점수 반영)</b>에서 80점 이상이면 완료할 수 있어요.</div>
           <div style="height:12px"></div>
           <div class="kpi">
-            <div class="chip">연속일수: <b id="streak">0</b>일</div>
+            <div class="chip">연속일수: <b id="streak">0</b>일</span></div>
             <div class="chip">마지막 완료: <span id="lastDone">—</span></div>
           </div>
         </div>
@@ -166,7 +166,7 @@ if(!prog._currentDay){ prog._currentDay=1; saveProg(prog); }
 if(!Array.isArray(prog._history)) { prog._history = []; saveProg(prog); }
 function computeDayFromStart(){ const start = new Date(prog._startedAt+'T00:00:00+09:00'); return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1)); }
 
-// ===== 데이터(제목/문장) =====
+// ===== 데이터 =====
 const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
   'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
   'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
@@ -228,7 +228,6 @@ function speak(text){ return speakQueue([text]); }
 
 // ===== STT & 채점 =====
 function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>toast('음성 인식 오류: '+(e.error||'unknown')); rec.onend=()=>onEnd&&onEnd(); return rec; }
-function recognizeOnce(){ return new Promise((resolve,reject)=>{ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ reject(new Error('STT not supported')); return; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1; let got=false; rec.onresult=(e)=>{ got=true; resolve(e.results[0][0].transcript); }; rec.onerror=(e)=>reject(e); rec.onend=()=>{ if(!got) resolve(''); }; rec.start(); }); }
 function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) d[i][0]=i; for(let j=0;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
 function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
 function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0; const dist=levenshtein(A,B); const max=Math.max(A.length,B.length)||1; return Math.max(0, Math.round((1-dist/max)*100)); }
@@ -302,6 +301,7 @@ function renderToday(){
         const hyp=e.results[0][0].transcript;
         const s=scoreSentence(text,hyp);
         const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hyp);
+        // 연습: 저장 반영 없음
         scoreBox.textContent=`연습 점수 ${s}%`;
         fbBox.textContent=fb.join(' · ');
       },()=>{ btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; });
@@ -373,7 +373,7 @@ function initHeaderKPI(){
   document.getElementById('lastDone').textContent = prog.lastDone||'—';
 }
 
-// ===== 3문장 연속 말하기(점수 반영) — 여러 번 시도 가능, 닫을 때 최종 반영 =====
+// ===== 3문장 연속 말하기(점수 반영) — 여러 번 시도 가능 & 닫을 때 최종 반영 =====
 function concatenateLines(lines){ return lines.join(' '); }
 
 function practiceReciteOneShot_final(lines, triggerBtn){
@@ -415,11 +415,12 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   const sumScore = box.querySelector('#sumScore');
   const sumFb    = box.querySelector('#sumFb');
 
-  // 반복 시도를 위한 상태
-  let finalText = '';
-  let lastScore = null;       // ← 패널을 닫을 때 이 값을 저장
-  let lastFb    = '';
+  // 반복 시도 상태
   let rec=null;
+  let finalText = '';
+  let lastScore = null;
+  let lastFb    = '';
+  let canStart  = true;  // ← onend까지 대기하는 락
 
   function resetStartUI(){
     btnStart.classList.remove('rec');
@@ -433,46 +434,59 @@ function practiceReciteOneShot_final(lines, triggerBtn){
       if (r.isFinal) finalText += (finalText ? ' ' : '') + r[0].transcript;
     }
   }
+
   function onEnd(){
-    // 시도 1회 종료 → 점수 계산만 표시(저장은 하지 않음)
+    // 1회 시도 종료 → 점수 계산만 표시
     const refAll = concatenateLines(lines);
     const sc = scoreSentence(refAll, finalText);
     const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
-    lastScore = isNaN(sc)? null : sc;   // ← 마지막 점수 보관
+
+    lastScore = isNaN(sc)? null : sc;
     lastFb    = fb.join(' · ');
     sumScore.textContent = (lastScore==null)? '—' : (lastScore + '%');
     sumFb.textContent = lastFb;
     resultBox.style.display = '';
 
-    // 다음 시도를 위해 UI 리셋
+    // 다음 시도를 위한 UI/상태 복구
     btnStop.disabled = true; btnStop.textContent = '중지됨';
     resetStartUI();
-    rec=null; finalText='';
+
+    // 엔진 정리 및 재시작 가능 플래그
+    rec=null;
+    finalText='';
+    setTimeout(()=>{ canStart=true; }, 200); // ← 안드로이드에서 onend 직후 재시작 안정화
   }
 
   btnStart.onclick = ()=>{
+    if(!canStart) return;      // onend 완료 전 재시작 방지
     if(rec) return;
+    canStart=false;            // 시작 시 락
+    finalText='';
+
     if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
     btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
     btnStop.disabled=false; btnStop.textContent='■ 중지';
-    finalText='';
 
-    rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
-    if(rec) rec.start();
-    toast('한 번에 3문장을 말해 보세요…');
+    // 약간의 지연 뒤 새 인스턴스 생성(엔진 리셋 안정화)
+    setTimeout(()=>{
+      rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
+      if(rec){ try{ rec.start(); }catch(_){ canStart=true; resetStartUI(); btnStop.disabled=true; toast('마이크 시작에 실패했습니다. 다시 시도해 주세요.'); } }
+      else { canStart=true; resetStartUI(); btnStop.disabled=true; }
+      toast('한 번에 3문장을 말해 보세요…');
+    }, 150);
   };
 
   btnStop.onclick = ()=>{
     if(rec){ try{ rec.stop(); }catch(_){ } }
     btnStop.disabled = true; btnStop.textContent = '중지됨';
-    // start 버튼은 onEnd에서 다시 활성화
+    // start 버튼은 onEnd에서 다시 활성화됨
   };
 
   box.querySelector('#btnClosePanel').onclick = ()=>{
-    try{ if(rec) rec.abort(); }catch(_){}
+    try{ if(rec){ rec.abort(); } }catch(_){}
     document.body.removeChild(wrap);
     restoreTrigger();
-    // ← 이 시점의 마지막 점수를 저장/반영
+    // 마지막 시도 점수 반영
     if(lastScore!=null){
       const day=getTodayDay(); const d=ensureDayState(day);
       d.comboScore = lastScore; saveProg(prog);
@@ -540,7 +554,7 @@ boot();
 <!--
 필수 파일:
 - manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=9)
-- sw.js  (오프라인 캐시; 새 코드 강제적용 위해 캐시키 업데이트 권장)
+- sw.js  (오프라인 캐시; 새 코드 강제적용 위해 캐시 키 업데이트 권장)
 -->
 </body>
 </html>
