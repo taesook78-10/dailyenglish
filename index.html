@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Daily 3 Lines — TTS Voice Select · STT · Score/Feedback · 100-Day</title>
+  <title>Daily 3 Lines — TTS · STT · Score · 100-Day</title>
   <meta name="theme-color" content="#0b1020" />
 
-  <!-- manifest: 배포 경로에 맞춰 절대경로 + 캐시버스터 권장 -->
-  <link rel="manifest" href="/dailyenglish/manifest.webmanifest?v=6">
+  <!-- PWA manifest (절대경로 + 캐시버스터) -->
+  <link rel="manifest" href="/dailyenglish/manifest.webmanifest?v=7">
   <link rel="apple-touch-icon" href="/dailyenglish/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/dailyenglish/icon-192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/dailyenglish/icon-192.png">
@@ -38,7 +38,7 @@
   .subtitle{font-size:13px;color:var(--muted)}
   .line{border:1px solid var(--ring);border-radius:14px;padding:12px;margin:8px 0;background:#0f1731}
   .line p{margin:0 0 6px;font-size:18px;line-height:1.45}
-  .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5}
+  .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5; display:block !important;}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:var(--ink);border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
   .btn:hover{filter:brightness(1.05)}
@@ -378,6 +378,7 @@ function renderToday(){
   pairs.forEach((pair,i)=>{
     const text = pair.en;
     const line=document.createElement('div'); line.className='line';
+
     const pEn=document.createElement('p'); pEn.textContent=text; line.appendChild(pEn);
     const pKo=document.createElement('p'); pKo.textContent=pair.ko; pKo.className='ko'; line.appendChild(pKo);
 
@@ -498,7 +499,7 @@ async function practiceRecite(lines){
       const hyp = await recognizeOnce();
       const sc = scoreSentence(ref, hyp);
       const fbs = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(ref, hyp);
-      items[i].querySelector('.hyp').textContent = '🗣️ ' + (hyp || '(인식 실패)');
+      items[i].querySelector('.hyp').textContent = '🗣️ ' + (hyp || '(인식 실패)';
       items[i].querySelector('.sc').textContent = isNaN(sc)? '—' : (sc + '%');
       items[i].querySelector('.feedback').textContent = fbs.join(' · ');
     }catch(e){
@@ -576,23 +577,21 @@ boot();
 <!--
 필수 추가 파일 (리포지토리 루트):
 
-1) manifest.webmanifest  (경로/아이콘은 이전 메시지의 완성본 참고)
-2) sw.js  (오프라인 캐시; 배포 반영 위해 캐시키는 d3l-v6처럼 증가 권장)
-const CACHE = 'd3l-v6';
-const ASSETS = [
-  '/dailyenglish/',
-  '/dailyenglish/index.html',
-  '/dailyenglish/manifest.webmanifest?v=6',
-  '/dailyenglish/icon-180.png',
-  '/dailyenglish/icon-192.png',
-  '/dailyenglish/icon-512.png',
-  '/dailyenglish/icon-192-maskable.png',
-  '/dailyenglish/icon-512-maskable.png'
-];
-// install/activate/fetch 로직은 이전과 동일
+1) manifest.webmanifest  (아이콘 포함, 링크는 /dailyenglish/manifest.webmanifest?v=7)
+2) sw.js  (오프라인 캐시; 새 버전 반영 위해 캐시키는 d3l-v7처럼 증가 권장)
+   예)
+   const CACHE = 'd3l-v7';
+   const ASSETS = [
+     '/dailyenglish/',
+     '/dailyenglish/index.html',
+     '/dailyenglish/manifest.webmanifest?v=7',
+     '/dailyenglish/icon-180.png',
+     '/dailyenglish/icon-192.png',
+     '/dailyenglish/icon-512.png',
+     '/dailyenglish/icon-192-maskable.png',
+     '/dailyenglish/icon-512-maskable.png'
+   ];
+   // install/activate/fetch 로직은 기존과 동일
 -->
 </body>
 </html>
-
-   
- 
