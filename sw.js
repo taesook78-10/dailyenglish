@@ -2,7 +2,7 @@
    const ASSETS = [
      '/dailyenglish/',
      '/dailyenglish/index.html',
-     '/dailyenglish/manifest.webmanifest?v=7',
+     '/dailyenglish/manifest.webmanifest?v=9',
      '/dailyenglish/icon-180.png',
      '/dailyenglish/icon-192.png',
      '/dailyenglish/icon-512.png',
@@ -11,6 +11,7 @@
    ];
    // install/activate/fetch 로직은 기존과 동일
 -->
+
 
 
 
