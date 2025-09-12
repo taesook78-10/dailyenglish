@@ -39,7 +39,7 @@
   .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5; display:block !important;}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:var(--ink);border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
+  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
   .btn:hover{filter:brightness(1.05)}
   .btn[disabled]{opacity:.6;cursor:not-allowed}
   .btn.pri{background:linear-gradient(180deg,#355bff,#2b4bd4);border-color:#3b57e0}
@@ -217,7 +217,7 @@ function randomLinesBilingual(title){
   ];
 }
 
-// ===== TTS(듣기) =====
+// ===== TTS =====
 let voices=[]; const voiceSelect=document.getElementById('voiceSelect');
 function loadVoices(){ try{ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }catch(e){ voices=[]; } }
 function sortVoices(list){ return [...list].sort((a,b)=>{ const score=v=>(/en[-_]?US/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0); const ds=score(b)-score(a); return ds||((a.name||'').localeCompare(b.name||'')); }); }
@@ -272,7 +272,7 @@ function ensureDayState(day){ const k='Day'+day; if(!prog[k]){ prog[k]={ lines:[
 
 function renderToday(){
   const day=getTodayDay(); const data=ensureDayState(day); const title=TITLES[day-1];
-  const pairs=randomLinesBilingual(title); // [{en,ko},{en,ko},{en,ko}]
+  const pairs=randomLinesBilingual(title);
   elDayNum.textContent=day; elTitle.textContent=title; elLines.innerHTML='';
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const sttSupported=!!SR;
 
@@ -333,7 +333,7 @@ function renderToday(){
   btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(연습)';
   if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
-  btnRecAll.onclick=()=> practiceReciteOneShot(pairs.map(x=>x.en), btnRecAll); // ← 한 번에 말하기
+  btnRecAll.onclick=()=> practiceReciteOneShot(pairs.map(x=>x.en), btnRecAll);
   allRow.appendChild(btnRecAll);
 
   elLines.appendChild(allRow);
@@ -379,8 +379,17 @@ async function practiceReciteOneShot(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요.'); return; }
 
-  // trigger 버튼 UI
+  // ▶ 트리거 버튼 원복 함수(즉시/보장)
   const origText = triggerBtn ? triggerBtn.textContent : '';
+  function restoreTrigger(){
+    if(triggerBtn){
+      triggerBtn.classList.remove('rec');
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = origText || '● 3문장 연속 말하기(연습)';
+    }
+  }
+
+  // trigger 버튼 UI: 녹음 시작
   if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
 
   // 패널
@@ -411,7 +420,6 @@ async function practiceReciteOneShot(lines, triggerBtn){
 
   let finalText = '';
   let rec = createRecognizer((e)=>{
-    // 실시간 받아쓰기
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++){
       const r = e.results[i];
@@ -419,8 +427,7 @@ async function practiceReciteOneShot(lines, triggerBtn){
       else interim += (interim ? ' ' : '') + r[0].transcript;
     }
     transBox.textContent = (finalText + ' ' + interim).trim() || '(아직 인식된 내용이 없어요)';
-  }, ()=>{ // onend
-    // 채점
+  }, ()=>{ // onend → 결과 표시 + 트리거 복구(보장)
     const refAll = concatenateLines(lines);
     const sc = scoreSentence(refAll, finalText);
     const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
@@ -428,29 +435,20 @@ async function practiceReciteOneShot(lines, triggerBtn){
     sumFb.textContent = fb.join(' · ');
     resultBox.style.display = '';
     btnStopAll.disabled = true;
+    btnStopAll.textContent = '중지됨';
+    restoreTrigger(); // ← 종료 시에도 복구
   }, {continuous:true, interim:true});
 
-  if(!rec){
-    if(triggerBtn){ triggerBtn.classList.remove('rec'); triggerBtn.disabled=false; triggerBtn.textContent=origText || '● 3문장 연속 말하기(연습)'; }
-    return;
-  }
+  if(!rec){ restoreTrigger(); return; }
 
-  // 중지/닫기
-  btnStopAll.onclick = ()=>{ try{ rec.stop(); }catch(_){ } };
-  box.querySelector('#btnClosePanel').onclick = ()=>{ try{ rec.abort(); }catch(_){ } document.body.removeChild(wrap); };
+  // ▶ 중지 버튼: 즉시 복구 + stop
+  btnStopAll.onclick = ()=>{ try{ rec.stop(); }catch(_){ } btnStopAll.disabled = true; btnStopAll.textContent = '중지됨'; restoreTrigger(); };
+
+  // 닫기
+  box.querySelector('#btnClosePanel').onclick = ()=>{ try{ rec.abort(); }catch(_){ } document.body.removeChild(wrap); restoreTrigger(); };
 
   rec.start();
   toast('한 번에 3문장을 말해 보세요…');
-
-  // 패널 닫힐 때 trigger UI 원복
-  const restore = ()=>{ if(triggerBtn){ triggerBtn.classList.remove('rec'); triggerBtn.disabled=false; triggerBtn.textContent=origText || '● 3문장 연속 말하기(연습)'; } };
-  // onend에서 결과가 나온 뒤 닫기 버튼으로 패널을 닫을 수 있으니, 언제든 복구 보장
-  wrap.addEventListener('click', (e)=>{ /* 패널 안쪽 클릭은 무시 */ }, true);
-  const mo = new MutationObserver(()=>{}); mo.observe(resultBox,{attributes:true,childList:true,subtree:true});
-  rec.onend = (rec.onend && rec.onend) || (()=>{}); // 위에서 설정됨
-  // 패널이 제거될 때 원복
-  const obs = new MutationObserver(()=>{ if(!document.body.contains(wrap)){ restore(); obs.disconnect(); } });
-  obs.observe(document.body,{childList:true});
 }
 
 // ===== 100일 챌린지 =====
@@ -511,9 +509,7 @@ boot();
 <!--
 필수 파일:
 - manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=8)
-- sw.js  (캐시 키 업데이트 권장: d3l-v8)
+- sw.js  (캐시 키 업데이트 권장: d3l-v9로 올리면 새 코드가 바로 적용돼요)
 -->
 </body>
 </html>
-
- 
