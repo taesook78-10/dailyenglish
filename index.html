@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Daily 3 Lines — TTS · STT · Score · 100-Day</title>
   <meta name="theme-color" content="#0b1020" />
-
-  <!-- PWA manifest (절대경로 + 캐시버스터) -->
   <link rel="manifest" href="/dailyenglish/manifest.webmanifest?v=8">
   <link rel="apple-touch-icon" href="/dailyenglish/icon-180.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/dailyenglish/icon-192.png">
@@ -43,13 +39,12 @@
   .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5; display:block !important;}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
+  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:var(--ink);border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
   .btn:hover{filter:brightness(1.05)}
   .btn[disabled]{opacity:.6;cursor:not-allowed}
   .btn.pri{background:linear-gradient(180deg,#355bff,#2b4bd4);border-color:#3b57e0}
   .btn.warn{background:#3a2a0e;border-color:#9f6b18}
   .btn.ghost{background:transparent;border-color:#2b3f7a}
-  /* ▶ 공통 녹음 중 스타일 */
   .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
 
   .score{font-weight:800}
@@ -66,15 +61,15 @@
   .small{font-size:12px;color:#a7b3d6}
   .hint{font-size:12px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:8px 10px;border-radius:10px}
 
-  /* 연속 말하기 연습 패널 */
+  /* 연속 말하기 패널 */
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:9999;}
-  .practice .box{width:min(680px,92vw); background:#101733; border:1px solid var(--ring); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
+  .practice .box{width:min(720px,94vw); background:#101733; border:1px solid var(--ring); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
   .practice .box h3{margin:0 0 10px; font-size:18px;}
-  .practice .box .item{border:1px solid var(--ring); border-radius:12px; padding:10px; margin:8px 0; background:#0f1731;}
-  .practice .box .item .ref{font-size:14px; color:#cfe0ff;}
-  .practice .box .item .hyp{font-size:14px; color:#a7b3d6;}
-  .practice .box .item .sc{font-weight:800;}
-  .feedback{display:block; font-size:12px; color:#cfe0ff; opacity:.9}
+  .practice .ref{font-size:14px; color:#cfe0ff; margin:6px 0 10px}
+  .practice .trans{min-height:110px; padding:10px; border:1px solid var(--ring); border-radius:12px; background:#0f1731; font-size:15px; line-height:1.5; color:#eaf1ff; white-space:pre-wrap}
+  .practice .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
+  .practice .result{margin-top:10px; padding:10px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
+  .feedback{display:block; font-size:12px; color:#cfe0ff; opacity:.95}
   </style>
 </head>
 <body>
@@ -222,130 +217,29 @@ function randomLinesBilingual(title){
   ];
 }
 
-// ===== TTS(듣기) — ANDROID 안정화 + Voice 선택 =====
-let voices=[];
-const voiceSelect = document.getElementById('voiceSelect');
-
+// ===== TTS(듣기) =====
+let voices=[]; const voiceSelect=document.getElementById('voiceSelect');
 function loadVoices(){ try{ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }catch(e){ voices=[]; } }
-function sortVoices(list){
-  return [...list].sort((a,b)=>{
-    const score = v => (/en[-_]?US/i.test(v.lang)?2 : /^en/i.test(v.lang)?1 : 0);
-    const ds = score(b)-score(a);
-    if (ds) return ds;
-    return (a.name||'').localeCompare(b.name||'');
-  });
-}
-function populateVoiceSelect(){
-  voiceSelect.innerHTML='';
-  if(!voices || !voices.length){
-    const opt=document.createElement('option'); opt.textContent='(no voices)'; opt.value=''; voiceSelect.appendChild(opt); voiceSelect.disabled=true;
-    return;
-  }
-  voiceSelect.disabled=false;
-  const sorted = sortVoices(voices);
-  for(const v of sorted){
-    const opt=document.createElement('option');
-    opt.value = v.voiceURI || v.name || '';
-    opt.textContent = `${v.name} — ${v.lang}`;
-    voiceSelect.appendChild(opt);
-  }
-  const byURI = sorted.find(v => (v.voiceURI||'') === (user.voiceURI||''));
-  if(byURI){ voiceSelect.value = byURI.voiceURI||''; }
-  else {
-    const enUS = sorted.find(v=>/en[-_]?US/i.test(v.lang));
-    voiceSelect.value = (enUS && (enUS.voiceURI||'')) || (sorted[0].voiceURI||'');
-    user.voiceURI = voiceSelect.value; saveUser(user);
-  }
-}
-async function waitForVoices(timeout=2000){
-  if(!('speechSynthesis' in window)) return;
-  loadVoices(); if(voices.length) return;
-  await new Promise((res)=>{ const t0=Date.now(); function h(){ loadVoices(); if(voices.length || Date.now()-t0>timeout){ speechSynthesis.removeEventListener('voiceschanged',h); res(); } } speechSynthesis.addEventListener('voiceschanged', h); setTimeout(h, timeout); });
-}
-if('speechSynthesis' in window){
-  loadVoices();
-  window.speechSynthesis.addEventListener('voiceschanged', ()=>{ loadVoices(); populateVoiceSelect(); updateDiag(); });
-}
+function sortVoices(list){ return [...list].sort((a,b)=>{ const score=v=>(/en[-_]?US/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0); const ds=score(b)-score(a); return ds||((a.name||'').localeCompare(b.name||'')); }); }
+function populateVoiceSelect(){ voiceSelect.innerHTML=''; if(!voices.length){ const o=document.createElement('option'); o.textContent='(no voices)'; o.value=''; voiceSelect.appendChild(o); voiceSelect.disabled=true; return; } voiceSelect.disabled=false; const sorted=sortVoices(voices); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=`${v.name} — ${v.lang}`; voiceSelect.appendChild(o);} const byURI=sorted.find(v=>(v.voiceURI||'')===(user.voiceURI||'')); if(byURI) voiceSelect.value=byURI.voiceURI||''; else { const enUS=sorted.find(v=>/en[-_]?US/i.test(v.lang)); voiceSelect.value=(enUS&&(enUS.voiceURI||''))||(sorted[0].voiceURI||''); user.voiceURI=voiceSelect.value; saveUser(user);} }
+async function waitForVoices(timeout=2000){ if(!('speechSynthesis' in window)) return; loadVoices(); if(voices.length) return; await new Promise(res=>{ const t0=Date.now(); function h(){ loadVoices(); if(voices.length||Date.now()-t0>timeout){ speechSynthesis.removeEventListener('voiceschanged',h); res(); } } speechSynthesis.addEventListener('voiceschanged',h); setTimeout(h,timeout); }); }
+if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.addEventListener('voiceschanged', ()=>{ loadVoices(); populateVoiceSelect(); updateDiag(); }); }
 function resumeTTS(){ try{ if('speechSynthesis' in window && speechSynthesis.paused) speechSynthesis.resume(); }catch(_){} }
-window.addEventListener('pointerdown', resumeTTS, { once:true });
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') resumeTTS(); });
-
-function getVoice(){
-  if(!voices || !voices.length) return null;
-  if(user.voiceURI){
-    const v = voices.find(v=> (v.voiceURI||'') === user.voiceURI);
-    if(v) return v;
-  }
-  return voices.find(v=>/en[-_]?US/i.test(v.lang)) || voices.find(v=>/^en/i.test(v.lang)) || voices[0] || null;
-}
-voiceSelect.addEventListener('change', ()=>{
-  user.voiceURI = voiceSelect.value || '';
-  saveUser(user);
-  toast('TTS 보이스를 변경했어요.');
-});
-
-function speakOnce(text){
-  return new Promise(async (resolve)=>{
-    if(!('speechSynthesis' in window)) return resolve();
-    await waitForVoices(); resumeTTS();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = user.lang || 'en-US';
-    utt.rate = user.ttsRate || 1;
-    const v=getVoice(); if(v){ utt.voice=v; utt.lang=v.lang||utt.lang; }
-    utt.onend=()=>resolve();
-    try{ if(speechSynthesis.speaking) speechSynthesis.cancel(); }catch(_){}
-    setTimeout(()=>speechSynthesis.speak(utt),0);
-  });
-}
-async function speakQueue(arr,onStart,onEnd){ try{ onStart&&onStart(); for(const s of arr){ await speakOnce(s); } } finally { onEnd&&onEnd(); } }
+window.addEventListener('pointerdown', resumeTTS, { once:true }); document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') resumeTTS(); });
+function getVoice(){ if(!voices.length) return null; if(user.voiceURI){ const v=voices.find(v=>(v.voiceURI||'')===user.voiceURI); if(v) return v; } return voices.find(v=>/en[-_]?US/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang))||voices[0]||null; }
+voiceSelect.addEventListener('change', ()=>{ user.voiceURI=voiceSelect.value||''; saveUser(user); toast('TTS 보이스를 변경했어요.'); });
+function speakOnce(text){ return new Promise(async (resolve)=>{ if(!('speechSynthesis' in window)) return resolve(); await waitForVoices(); resumeTTS(); const utt=new SpeechSynthesisUtterance(text); utt.lang=user.lang||'en-US'; utt.rate=user.ttsRate||1; const v=getVoice(); if(v){ utt.voice=v; utt.lang=v.lang||utt.lang; } utt.onend=()=>resolve(); try{ if(speechSynthesis.speaking) speechSynthesis.cancel(); }catch(_){} setTimeout(()=>speechSynthesis.speak(utt),0); }); }
+async function speakQueue(arr,onStart,onEnd){ try{ onStart&&onStart(); for(const s of arr){ await speakOnce(s); } } finally{ onEnd&&onEnd(); } }
 function speak(text){ return speakQueue([text]); }
 
-// ===== STT(말하기) & 채점 + 피드백 =====
-function createRecognizer(onResult,onEnd){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요. (Android Chrome 권장)'); return null; }
-  const rec=new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
-  rec.onresult=(e)=>{ const text=e.results[0][0].transcript; onResult(text); };
-  rec.onerror=(e)=>{ toast('음성 인식 오류: '+(e.error||'unknown')); };
-  rec.onend=()=>{ onEnd&&onEnd(); };
-  return rec;
-}
-function recognizeOnce(){
-  return new Promise((resolve,reject)=>{
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ reject(new Error('STT not supported')); return; }
-    const rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
-    let got=false;
-    rec.onresult=(e)=>{ got=true; resolve(e.results[0][0].transcript); };
-    rec.onerror=(e)=>{ reject(e); };
-    rec.onend=()=>{ if(!got) resolve(''); };
-    rec.start();
-  });
-}
-function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++)d[i][0]=i; for(let j=0;j<=n;j++)d[0][j]=j;
-  for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
+// ===== STT & 채점 =====
+function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>toast('음성 인식 오류: '+(e.error||'unknown')); rec.onend=()=>onEnd&&onEnd(); return rec; }
+function recognizeOnce(){ return new Promise((resolve,reject)=>{ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ reject(new Error('STT not supported')); return; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1; let got=false; rec.onresult=(e)=>{ got=true; resolve(e.results[0][0].transcript); }; rec.onerror=(e)=>reject(e); rec.onend=()=>{ if(!got) resolve(''); }; rec.start(); }); }
+function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) d[i][0]=i; for(let j=0;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
 function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
 function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0; const dist=levenshtein(A,B); const max=Math.max(A.length,B.length)||1; return Math.max(0, Math.round((1-dist/max)*100)); }
-// === 간단 피드백 생성 ===
 function tokenize(s){ return norm(s).split(' ').filter(Boolean); }
-function wordDiffFeedback(ref, hyp){
-  const R = tokenize(ref), H = tokenize(hyp);
-  if(!H.length) return ['조금 더 크게, 또렷하게 말해줘요!'];
-  const setH = new Set(H);
-  const tips = [];
-  const missing = R.filter(w=>!setH.has(w));
-  if(missing.length>=2) tips.push('단어 몇 개 빠졌어요 (전체 끝까지 말하기).');
-  if(H.length <= Math.max(2, Math.floor(R.length*0.6))) tips.push('말이 너무 짧아요. 전체 문장을 끝까지 말해보세요.');
-  const endsS = R.filter(w=>/^[a-z]+s$/.test(w));
-  if(endsS.some(w=>!H.includes(w))) tips.push('복수형/3인칭 단수 -s 소리를 살려요.');
-  const endsED = R.filter(w=>/^[a-z]+ed$/.test(w));
-  if(endsED.some(w=>!H.includes(w))) tips.push('과거형 -ed 발음 점검!');
-  if(/th/.test(norm(ref)) && !/th/.test(norm(hyp))) tips.push('th(θ/ð) 혀끝 소리 주의!');
-  if(/[rl]/.test(norm(ref)) && !/[rl]/.test(norm(hyp))) tips.push('R/L 구분 또렷하게!');
-  if(/v/.test(norm(ref)) && /b/.test(norm(hyp))) tips.push('v(아랫입술+윗이) vs b 구분!');
-  if(tips.length<=1) tips.push('억양을 살려 자연스럽게 읽어보세요.');
-  return tips.slice(0,2);
-}
+function wordDiffFeedback(ref, hyp){ const R=tokenize(ref), H=tokenize(hyp); if(!H.length) return ['조금 더 크게, 또렷하게 말해줘요!']; const setH=new Set(H); const tips=[]; const missing=R.filter(w=>!setH.has(w)); if(missing.length>=2) tips.push('단어 몇 개 빠졌어요 (전체 끝까지 말하기).'); if(H.length <= Math.max(2, Math.floor(R.length*0.6))) tips.push('말이 너무 짧아요. 전체 문장을 끝까지 말해보세요.'); const endsS=R.filter(w=>/^[a-z]+s$/.test(w)); if(endsS.some(w=>!H.includes(w))) tips.push('복수형/3인칭 단수 -s 소리를 살려요.'); const endsED=R.filter(w=>/^[a-z]+ed$/.test(w)); if(endsED.some(w=>!H.includes(w))) tips.push('과거형 -ed 발음 점검!'); if(/th/.test(norm(ref)) && !/th/.test(norm(hyp))) tips.push('th(θ/ð) 혀끝 소리 주의!'); if(/[rl]/.test(norm(ref)) && !/[rl]/.test(norm(hyp))) tips.push('R/L 구분 또렷하게!'); if(/v/.test(norm(ref)) && /b/.test(norm(hyp))) tips.push('v(아랫입술+윗이) vs b 구분!'); if(tips.length<=1) tips.push('억양을 살려 자연스럽게 읽어보세요.'); return tips.slice(0,2); }
 
 // ===== UI 참조 =====
 const tabs=document.querySelectorAll('.tab');
@@ -402,28 +296,21 @@ function renderToday(){
     const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent = (data.lines[i].fb||[]).join(' · ');
 
     let rec=null;
-
-    // ▶ 줄별 말하기 상태 UI
-    function setRecUI(active){
-      if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…'; }
-      else{ btnRec.classList.remove('rec'); btnRec.textContent='● 말하기'; }
-    }
+    function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기'; } }
 
     btnRec.onclick=()=>{ 
       if(rec||!sttSupported) return; 
       btnRec.disabled=true; btnStop.disabled=false; setRecUI(true); toast('말해 보세요…');
-      rec=createRecognizer((hyp)=>{
+      rec=createRecognizer((e)=>{
+        const hyp=e.results[0][0].transcript;
         const s=scoreSentence(text,hyp);
         const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hyp);
         data.lines[i].score=s; data.lines[i].fb=fb; saveProg(prog);
         scoreBox.textContent=`점수 ${s}%`;
         fbBox.textContent=fb.join(' · ');
-      },()=>{ 
-        btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; updateProgress(); 
-      });
+      },()=>{ btnRec.disabled=false; btnStop.disabled=true; setRecUI(false); rec=null; updateProgress(); });
       if(rec) rec.start();
     };
-
     btnStop.onclick=()=>{ if(rec){ rec.stop(); } };
 
     row.appendChild(btnPlay); row.appendChild(btnRec); row.appendChild(btnStop); row.appendChild(scoreBox);
@@ -431,21 +318,22 @@ function renderToday(){
     elLines.appendChild(line);
   });
 
-  // 3문장 연속 듣기 & 3문장 연속 말하기(연습)
+  // 3문장 연속 듣기 & 3문장 연속 말하기(연습: 한 번에)
   const allRow=document.createElement('div'); allRow.className='row';
 
   const btnAll=document.createElement('button');
   btnAll.className='btn';
   btnAll.textContent='▶︎ 3문장 연속 듣기';
-  btnAll.onclick=()=> speakQueue(pairs.map(x=>x.en), ()=>{btnAll.disabled=true; btnAll.textContent='▶︎ 재생 중…';}, ()=>{btnAll.disabled=false; btnAll.textContent='▶︎ 3문장 연속 듣기';});
+  btnAll.onclick=()=> speakQueue(pairs.map(x=>x.en),
+    ()=>{btnAll.disabled=true; btnAll.textContent='▶︎ 재생 중…';},
+    ()=>{btnAll.disabled=false; btnAll.textContent='▶︎ 3문장 연속 듣기';});
   allRow.appendChild(btnAll);
 
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(연습)';
   if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
-  // ▶ 트리거 버튼을 함께 전달하여 UI 동기화
-  btnRecAll.onclick=()=> practiceRecite(pairs.map(x=>x.en), btnRecAll);
+  btnRecAll.onclick=()=> practiceReciteOneShot(pairs.map(x=>x.en), btnRecAll); // ← 한 번에 말하기
   allRow.appendChild(btnRecAll);
 
   elLines.appendChild(allRow);
@@ -482,86 +370,104 @@ function markDone(day,avg){
   renderChallenge100(); renderHistory();
 }
 
-function initHeaderKPI(){
-  document.getElementById('streak').textContent = prog.streak||0;
-  document.getElementById('lastDone').textContent = prog.lastDone||'—';
-}
+function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
 
-// ===== 3문장 연속 말하기(연습) =====
-async function practiceRecite(lines, triggerBtn){
+// ===== 연속 말하기(연습): 한 번에 받아쓰기 + 종합 채점 =====
+function concatenateLines(lines){ return lines.join(' '); }
+
+async function practiceReciteOneShot(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요.'); return; }
 
-  // 트리거 버튼 UI: 시작
+  // trigger 버튼 UI
   const origText = triggerBtn ? triggerBtn.textContent : '';
-  if(triggerBtn){
-    triggerBtn.classList.add('rec');
-    triggerBtn.disabled = true;
-    triggerBtn.textContent = '● 연속 말하기 중…';
-  }
+  if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
 
-  // 패널 UI
+  // 패널
   const wrap=document.createElement('div'); wrap.className='practice';
   const box=document.createElement('div'); box.className='box';
-  box.innerHTML = `<h3>🎤 3문장 연속 말하기 (연습) — 점수/기록에 반영되지 않습니다</h3>`;
-  const list=document.createElement('div');
-  const items=[];
-  lines.forEach((ref,idx)=>{
-    const it=document.createElement('div'); it.className='item';
-    it.innerHTML = `<div><b>${idx+1}번 문장</b></div>
-      <div class="ref">📌 ${ref}</div>
-      <div class="hyp">…</div>
-      <div>임시 점수: <span class="sc">—</span></div>
-      <div class="feedback"></div>`;
-    list.appendChild(it); items.push(it);
-  });
-  const row=document.createElement('div'); row.className='row';
-  const btnClose=document.createElement('button'); btnClose.className='btn'; btnClose.textContent='닫기'; btnClose.onclick=()=>document.body.removeChild(wrap);
-  row.appendChild(btnClose);
-  box.appendChild(list); box.appendChild(row); wrap.appendChild(box); document.body.appendChild(wrap);
+  const refs = lines.map((s,i)=>`${i+1}. ${s}`).join('\n');
+  box.innerHTML = `
+    <h3>🎤 3문장 연속 말하기 (연습 · 한 번에)</h3>
+    <div class="ref">아래 문장을 한 번에 이어서 자연스럽게 말해 보세요.<br><pre style="margin:6px 0 0; white-space:pre-wrap">${refs}</pre></div>
+    <div class="trans" id="transBox">… 듣는 중 · 말한 내용이 여기에 실시간으로 적혀요</div>
+    <div class="meta">
+      <button class="btn rec" id="btnStopAll">■ 중지</button>
+      <span class="small">종료하면 3문장 기준으로 종합 채점/피드백이 표시됩니다. (기록에는 반영하지 않음)</span>
+    </div>
+    <div class="result" id="resultBox" style="display:none">
+      <div>종합 점수: <b id="sumScore">—</b></div>
+      <div class="feedback" id="sumFb"></div>
+      <div style="margin-top:8px"><button class="btn" id="btnClosePanel">닫기</button></div>
+    </div>
+  `;
+  wrap.appendChild(box); document.body.appendChild(wrap);
 
-  // 순차 인식 (기록/진행 미반영)
-  try{
-    for(let i=0;i<lines.length;i++){
-      const ref = lines[i];
-      items[i].querySelector('.hyp').textContent = '🎙️ 듣는 중… 자연스럽게 말해 보세요.';
-      try{
-        const hyp = await recognizeOnce();
-        const sc = scoreSentence(ref, hyp);
-        const fbs = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(ref, hyp);
-        items[i].querySelector('.hyp').textContent = '🗣️ ' + (hyp || '(인식 실패)');
-        items[i].querySelector('.sc').textContent = isNaN(sc)? '—' : (sc + '%');
-        items[i].querySelector('.feedback').textContent = fbs.join(' · ');
-      }catch(e){
-        items[i].querySelector('.hyp').textContent = '⚠️ 인식 오류';
-        items[i].querySelector('.sc').textContent = '—';
-        items[i].querySelector('.feedback').textContent = '마이크 상태 또는 주변 소음을 확인해 주세요.';
-      }
+  const transBox = box.querySelector('#transBox');
+  const resultBox = box.querySelector('#resultBox');
+  const sumScore = box.querySelector('#sumScore');
+  const sumFb = box.querySelector('#sumFb');
+  const btnStopAll = box.querySelector('#btnStopAll');
+
+  let finalText = '';
+  let rec = createRecognizer((e)=>{
+    // 실시간 받아쓰기
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++){
+      const r = e.results[i];
+      if (r.isFinal) finalText += (finalText ? ' ' : '') + r[0].transcript;
+      else interim += (interim ? ' ' : '') + r[0].transcript;
     }
-    toast('연습이 끝났어요! (점수/피드백은 기록에 반영되지 않음)');
-  } finally {
-    // 트리거 버튼 UI: 종료/원복
-    if(triggerBtn){
-      triggerBtn.classList.remove('rec');
-      triggerBtn.disabled = false;
-      triggerBtn.textContent = origText || '● 3문장 연속 말하기(연습)';
-    }
+    transBox.textContent = (finalText + ' ' + interim).trim() || '(아직 인식된 내용이 없어요)';
+  }, ()=>{ // onend
+    // 채점
+    const refAll = concatenateLines(lines);
+    const sc = scoreSentence(refAll, finalText);
+    const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
+    sumScore.textContent = isNaN(sc)? '—' : (sc + '%');
+    sumFb.textContent = fb.join(' · ');
+    resultBox.style.display = '';
+    btnStopAll.disabled = true;
+  }, {continuous:true, interim:true});
+
+  if(!rec){
+    if(triggerBtn){ triggerBtn.classList.remove('rec'); triggerBtn.disabled=false; triggerBtn.textContent=origText || '● 3문장 연속 말하기(연습)'; }
+    return;
   }
+
+  // 중지/닫기
+  btnStopAll.onclick = ()=>{ try{ rec.stop(); }catch(_){ } };
+  box.querySelector('#btnClosePanel').onclick = ()=>{ try{ rec.abort(); }catch(_){ } document.body.removeChild(wrap); };
+
+  rec.start();
+  toast('한 번에 3문장을 말해 보세요…');
+
+  // 패널 닫힐 때 trigger UI 원복
+  const restore = ()=>{ if(triggerBtn){ triggerBtn.classList.remove('rec'); triggerBtn.disabled=false; triggerBtn.textContent=origText || '● 3문장 연속 말하기(연습)'; } };
+  // onend에서 결과가 나온 뒤 닫기 버튼으로 패널을 닫을 수 있으니, 언제든 복구 보장
+  wrap.addEventListener('click', (e)=>{ /* 패널 안쪽 클릭은 무시 */ }, true);
+  const mo = new MutationObserver(()=>{}); mo.observe(resultBox,{attributes:true,childList:true,subtree:true});
+  rec.onend = (rec.onend && rec.onend) || (()=>{}); // 위에서 설정됨
+  // 패널이 제거될 때 원복
+  const obs = new MutationObserver(()=>{ if(!document.body.contains(wrap)){ restore(); obs.disconnect(); } });
+  obs.observe(document.body,{childList:true});
 }
 
-// ===== 100일 챌린지 캘린더 =====
+// ===== 100일 챌린지 =====
 function renderChallenge100(){
   const grid=document.getElementById('challenge100'); grid.innerHTML='';
   const cur=getTodayDay();
-  for(let i=1;i<=100;i++){ const cell=document.createElement('div'); cell.className='day'; cell.textContent=i;
+  for(let i=1;i<=100;i++){
+    const cell=document.createElement('div'); cell.className='day'; cell.textContent=i;
     const k='Day'+i; if(prog[k] && prog[k].done){ cell.classList.add('done'); cell.style.borderColor='#3b82f6'; }
     if(i===cur){ cell.style.outline='2px solid #5b8cff'; cell.style.color='#e8eefc'; }
-    cell.title=k+(i===cur?' • today':''); cell.onclick=()=>{ prog._currentDay=i; saveProg(prog); tabs.forEach(b=>{ if(b.dataset.view==='home'){ b.click(); }}); renderToday(); };
+    cell.title=k+(i===cur?' • today':'');
+    cell.onclick=()=>{ prog._currentDay=i; saveProg(prog); tabs.forEach(b=>{ if(b.dataset.view==='home'){ b.click(); }}); renderToday(); };
     grid.appendChild(cell);
   }
 }
 
-// ===== 기록(History) =====
+// ===== 기록 =====
 function renderHistory(){
   const box=document.getElementById('history');
   let list = Array.isArray(prog._history) ? [...prog._history] : [];
@@ -594,18 +500,8 @@ document.getElementById('btnReset').onclick=()=>{ if(!confirm('정말 전체 데
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
 // ===== 진단 배지 =====
-async function updateDiag(){
-  const supported = 'speechSynthesis' in window;
-  badgeSupport.textContent = 'TTS: ' + (supported?'yes':'no');
-  badgeSupport.className = 'badge ' + (supported?'good':'bad');
-  badgeVoices.textContent = 'voices: ' + (voices?voices.length:0);
-  badgeVoices.className = 'badge ' + ((voices&&voices.length)?'good':'bad');
-}
-async function initDiag(){
-  await waitForVoices(1200);
-  populateVoiceSelect();
-  updateDiag();
-}
+async function updateDiag(){ const supported='speechSynthesis' in window; badgeSupport.textContent='TTS: ' + (supported?'yes':'no'); badgeSupport.className='badge '+(supported?'good':'bad'); badgeVoices.textContent='voices: ' + (voices?voices.length:0); badgeVoices.className='badge ' + ((voices&&voices.length)?'good':'bad'); }
+async function initDiag(){ await waitForVoices(1200); populateVoiceSelect(); updateDiag(); }
 
 // ===== 부팅 =====
 async function boot(){ await initDiag(); initHeaderKPI(); renderToday(); renderChallenge100(); }
@@ -613,10 +509,10 @@ boot();
 </script>
 
 <!--
-필수 추가 파일 (리포지토리 루트):
-
-1) manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=8)
-2) sw.js  (오프라인 캐시; 새 버전 반영 위해 캐시키 d3l-v8 권장)
+필수 파일:
+- manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=8)
+- sw.js  (캐시 키 업데이트 권장: d3l-v8)
 -->
 </body>
 </html>
+
