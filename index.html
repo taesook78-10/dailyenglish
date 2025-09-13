@@ -30,7 +30,7 @@
   .card .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 0}
   .card .body{padding:12px 14px 16px}
   .title{font-size:26px;font-weight:900;letter-spacing:.3px}
-  .subtitle{font-size:13px;color:var(--muted)}
+  .subtitle{font-size:13px;color:#a7b3d6}
   .line{border:1px solid var(--ring);border-radius:14px;padding:12px;margin:8px 0;background:#0f1731}
   .line p{margin:0 0 6px;font-size:18px;line-height:1.45}
   .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5; display:block !important;}
@@ -58,7 +58,6 @@
   .small{font-size:12px;color:#a7b3d6}
   .hint{font-size:12px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:8px 10px;border-radius:10px}
 
-  /* 연속 말하기 패널 */
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:9999;}
   .practice .box{width:min(720px,94vw); background:#101733; border:1px solid var(--ring); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
   .practice .box h3{margin:0 0 10px; font-size:18px;}
@@ -67,7 +66,6 @@
   .practice .result{margin-top:10px; padding:10px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
   .feedback{display:block; font-size:12px; color:#cfe0ff; opacity:.95}
 
-  /* 진단 배지 숨김 */
   #diagSupport, #diagVoices { display:none !important; }
   </style>
 </head>
@@ -149,7 +147,7 @@
   </div>
 
 <script>
-// ===== 스토리지 =====
+// ===== Storage =====
 const LS_USER='d3l_user', LS_PROGRESS='d3l_progress';
 function todayKey(){ const f = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}); return f.format(new Date()); }
 function loadUser(){ return JSON.parse(localStorage.getItem(LS_USER)||'{"ttsRate":1,"lang":"en-US","voiceURI":""}'); }
@@ -162,7 +160,7 @@ if(!prog._currentDay){ prog._currentDay=1; saveProg(prog); }
 if(!Array.isArray(prog._history)) { prog._history = []; saveProg(prog); }
 function computeDayFromStart(){ const start = new Date(prog._startedAt+'T00:00:00+09:00'); return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1)); }
 
-// ===== 데이터 =====
+// ===== Data =====
 const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
   'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
   'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
@@ -222,21 +220,24 @@ function speakOnce(text){ return new Promise(async (resolve)=>{ if(!('speechSynt
 async function speakQueue(arr,onStart,onEnd){ try{ onStart&&onStart(); for(const s of arr){ await speakOnce(s); } } finally{ onEnd&&onEnd(); } }
 function speak(text){ return speakQueue([text]); }
 
-// ===== STT & 채점 =====
-function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>toast('음성 인식 오류: '+(e.error||'unknown')); rec.onend=()=>onEnd&&onEnd(); return rec; }
+// ===== STT & Scoring =====
+function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>onErrorHandler(e, rec, {onResult,onEnd,continuous,interim}); rec.onend=()=>onEnd&&onEnd(); return rec; }
+function onErrorHandler(e, rec, ctx){
+  // 연습/연속 공통: 일시 오류는 자동 복구
+  const err = e && e.error || '';
+  if(err==='no-speech' || err==='network' || err==='audio-capture'){ /* swallow; onend에서 재시작 */ }
+}
 function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) d[i][0]=i; for(let j=0;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
 function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
 function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0; const dist=levenshtein(A,B); const max=Math.max(A.length,B.length)||1; return Math.max(0, Math.round((1-dist/max)*100)); }
 function tokenize(s){ return norm(s).split(' ').filter(Boolean); }
 function wordDiffFeedback(ref, hyp){ const R=tokenize(ref), H=tokenize(hyp); if(!H.length) return ['조금 더 크게, 또렷하게 말해줘요!']; const setH=new Set(H); const tips=[]; const missing=R.filter(w=>!setH.has(w)); if(missing.length>=2) tips.push('단어 몇 개 빠졌어요 (전체 끝까지 말하기).'); if(H.length <= Math.max(2, Math.floor(R.length*0.6))) tips.push('말이 너무 짧아요. 전체 문장을 끝까지 말해보세요.'); const endsS=R.filter(w=>/^[a-z]+s$/.test(w)); if(endsS.some(w=>!H.includes(w))) tips.push('복수형/3인칭 단수 -s 소리를 살려요.'); const endsED=R.filter(w=>/^[a-z]+ed$/.test(w)); if(endsED.some(w=>!H.includes(w))) tips.push('과거형 -ed 발음 점검!'); if(/th/.test(norm(ref)) && !/th/.test(norm(hyp))) tips.push('th(θ/ð) 혀끝 소리 주의!'); if(/[rl]/.test(norm(ref)) && !/[rl]/.test(norm(hyp))) tips.push('R/L 구분 또렷하게!'); if(/v/.test(norm(ref)) && /b/.test(norm(hyp))) tips.push('v(아랫입술+윗이) vs b 구분!'); if(tips.length<=1) tips.push('억양을 살려 자연스럽게 읽어보세요.'); return tips.slice(0,2); }
 
-// ===== UI =====
+// ===== UI Refs =====
 const tabs=document.querySelectorAll('.tab');
 const views={home:document.getElementById('home'),challenge:document.getElementById('challenge'),progress:document.getElementById('progress')};
-const elTitle=document.getElementById('dayTitle'); const elDayNum=document.getElementById('dayNum'); const elLines=document.getElementById('lines');
+const elDayNum=document.getElementById('dayNum'); const elTitle=document.getElementById('dayTitle'); const elLines=document.getElementById('lines');
 const elAvg=document.getElementById('avgScore'); const elProgText=document.getElementById('progressText'); const elMeter=document.getElementById('meterBar');
-const elDone=document.getElementById('markDone'); const elStreak=document.getElementById('streak'); const elLastDone=document.getElementById('lastDone');
-const elRate=document.getElementById('rate'); const elToast=document.getElementById('toast'); const elToastMsg=document.getElementById('toastMsg');
 const btnRetry=document.getElementById('btnRetry'); const btnReset=document.getElementById('btnReset');
 
 for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classList.remove('active')); t.classList.add('active');
@@ -245,23 +246,24 @@ for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classL
   if(t.dataset.view==='progress') renderHistory();
 }); }
 
-// 토스트
-let toastTimer; function toast(msg){ clearTimeout(toastTimer); elToastMsg.textContent=msg; elToast.style.display='flex'; toastTimer=setTimeout(()=>elToast.style.display='none', 1800); }
+// Toast
+let toastTimer; function toast(msg){ clearTimeout(toastTimer); const el=document.getElementById('toast'); const m=document.getElementById('toastMsg'); m.textContent=msg; el.style.display='flex'; toastTimer=setTimeout(()=>el.style.display='none', 1800); }
 
-// 속도
+// Rate
+const elRate=document.getElementById('rate');
 elRate.textContent=(user.ttsRate||1).toFixed(1)+'x';
 document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 
-// ===== Day/상태 =====
+// ===== Day/State =====
 function getTodayDay(){ const auto=computeDayFromStart(); const cur=prog._currentDay||auto; const d=Math.max(1,Math.min(100,cur)); if(prog._currentDay!==d){ prog._currentDay=d; saveProg(prog);} return d; }
 function ensureDayState(day){
   const k='Day'+day;
-  if(!prog[k]){ prog[k]={ lines:[{heard:false},{heard:false},{heard:false}], done:false, comboScore:null }; saveProg(prog); }
+  if(!prog[k]){ prog[k]={ comboScore:null, done:false }; saveProg(prog); }
   return prog[k];
 }
 
-// ===== 렌더 =====
+// ===== Render Today =====
 function renderToday(){
   const day=getTodayDay(); const data=ensureDayState(day); const title=TITLES[day-1];
   const pairs=randomLinesBilingual(title);
@@ -278,52 +280,51 @@ function renderToday(){
     const row=document.createElement('div'); row.className='row';
 
     const btnPlay=document.createElement('button'); btnPlay.className='btn'; btnPlay.textContent='▶︎ 듣기';
-    btnPlay.onclick=()=>{ speak(text); /* 개별 듣기는 진도에 영향 X */ };
+    btnPlay.onclick=()=>{ speak(text); /* 듣기는 진도에 영향 X */ };
 
     const btnRec=document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기(연습)';
     const btnStop=document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 중지'; btnStop.disabled=true;
     if(!sttSupported){ btnRec.disabled=true; btnStop.disabled=true; btnRec.title='이 기기에서는 음성 인식이 제한됩니다.'; }
 
-    const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px'; scoreBox.textContent='';
+    const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px';
     const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent='';
 
-    // ====== 개별 말하기(연습) — 반드시 중지 버튼으로 종료 ======
+    // ——— 개별 말하기(연습): 반드시 사용자가 중지해야 종료 ———
     let rec=null, recActive=false, hypAccum='';
     function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…(연습)'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기(연습)'; } }
 
     function startLineRec(){
-      hypAccum='';
-      rec=createRecognizer((e)=>{
+      rec = createRecognizer((e)=>{
         for(let i=e.resultIndex;i<e.results.length;i++){
           const r=e.results[i];
           if(r.isFinal){ hypAccum += (hypAccum?' ':'') + r[0].transcript; }
         }
       }, ()=>{
-        // 자동 onend가 와도 recActive면 즉시 재시작 → 사용자가 '중지' 누를 때까지 계속
+        // 자동 onend: 사용자가 중지하지 않았다면 즉시 새 인스턴스 생성하여 재시작
         if(recActive){
-          try{ rec.start(); }catch(_){}
-        }else{
-          // 사용자가 중지 눌러서 끝난 경우 → 점수 계산
+          try{ rec=null; setTimeout(startLineRec, 200); }catch(_){}
+        } else {
+          // 사용자가 중지 → 점수 계산
           const s=scoreSentence(text,hypAccum);
           const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hypAccum);
           scoreBox.textContent=`연습 점수 ${s}%`;
           fbBox.textContent=fb.join(' · ');
-          btnRec.disabled=false; btnStop.disabled=true; setRecUI(false);
-          rec=null;
+          btnRec.disabled=false; btnStop.disabled=true; btnStop.textContent='■ 중지';
+          setRecUI(false);
         }
       }, {continuous:true, interim:false});
-      if(rec){ try{ rec.start(); }catch(_){ rec=null; toast('마이크를 시작할 수 없어요. 권한을 확인해 주세요.'); } }
+      if(rec){ try{ rec.start(); }catch(_){ toast('마이크 시작 실패. 권한/다른 앱 점검 후 다시 시도해 주세요.'); } }
     }
 
     btnRec.onclick=()=>{ 
       if(rec||!sttSupported) return; 
-      recActive=true;
+      recActive=true; hypAccum='';
       btnRec.disabled=true; btnStop.disabled=false; setRecUI(true); toast('말해 보세요… (연습)');
       startLineRec();
     };
     btnStop.onclick=()=>{ 
       if(!rec) return;
-      recActive=false;         // ← 반드시 사용자가 중지해야 종료됨(자동 onend는 재시작)
+      recActive=false;                 // 사용자가 중지
       try{ rec.stop(); }catch(_){}
       btnStop.disabled=true; btnStop.textContent='중지됨';
     };
@@ -347,7 +348,7 @@ function renderToday(){
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(점수 반영)';
-  if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
+  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
   btnRecAll.onclick=()=> practiceReciteOneShot_final(pairs.map(x=>x.en), btnRecAll);
   allRow.appendChild(btnRecAll);
 
@@ -356,15 +357,14 @@ function renderToday(){
   updateProgress();
 }
 
+// ===== Progress (연속 말하기 종합 점수만 반영) =====
 function updateProgress(){
-  const day=getTodayDay(); const d=prog['Day'+day]||{};
+  const day=getTodayDay(); const d=ensureDayState(day);
   const avg = (typeof d.comboScore==='number') ? d.comboScore : 0;
-  // 종합 점수 기반으로 진도 게이지 & 텍스트 표시
-  document.getElementById('avgScore').textContent = (avg>0? avg+'%':'—');
+  document.getElementById('avgScore').textContent = avg>0 ? (avg+'%') : '—';
   document.getElementById('progressText').textContent = `${avg}%`;
   document.getElementById('meterBar').style.width = `${avg}%`;
 
-  // 완료 조건은 기존대로: (원하시면 여기서도 점수만으로 바꿔드릴 수 있어요)
   const pass = avg>=80;
   const elDone=document.getElementById('markDone');
   elDone.disabled=!pass; elDone.textContent=pass?'✔ 조건 충족! 오늘 완료하기':'✔ 오늘 완료로 표시';
@@ -373,11 +373,11 @@ function updateProgress(){
 
 function markDone(day,avg){
   const k='Day'+day; const title=TITLES[day-1];
-  if(!prog[k]) prog[k]={lines:[{heard:false},{heard:false},{heard:false}], done:false, comboScore:null};
-  prog[k].done=true; prog[k].comboScore=avg; prog.lastDone=k;
+  const now=todayKey();
+  prog[k] = { comboScore:avg, done:true };
+  prog.lastDone=k;
   const prev='Day'+(day-1), prevStreak=prog.streak||0;
   prog.streak = (day>1 && prog[prev]&&prog[prev].done)? prevStreak+1 : 1;
-  const now=todayKey();
   if(!Array.isArray(prog._history)) prog._history=[];
   prog._history = prog._history.filter(h=>h.day!==day);
   prog._history.push({ day, date: now, title, avg });
@@ -388,14 +388,8 @@ function markDone(day,avg){
   renderChallenge100(); renderHistory();
 }
 
-function initHeaderKPI(){
-  document.getElementById('streak').textContent = prog.streak||0;
-  document.getElementById('lastDone').textContent = prog.lastDone||'—';
-}
-
-// ===== 3문장 연속 말하기(점수 반영) — 여러 번 시도 가능 & 닫을 때 최종 반영 =====
+// ===== 연속 말하기 (닫을 때 마지막 점수만 반영) =====
 function concatenateLines(lines){ return lines.join(' '); }
-
 function practiceReciteOneShot_final(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요.'); return; }
@@ -409,7 +403,6 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     }
   }
 
-  // 패널
   const wrap=document.createElement('div'); wrap.className='practice';
   const box=document.createElement('div'); box.className='box';
   const refs = lines.map((s,i)=>`${i+1}. ${s}`).join('\n');
@@ -419,7 +412,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     <div class="meta">
       <button class="btn pri" id="btnStart">● 말하기 시작</button>
       <button class="btn" id="btnStop" disabled>■ 중지</button>
-      <span class="small">여러 번 시도해도 됩니다. <b>닫기</b> 버튼을 누른 시점의 점수가 반영됩니다.</span>
+      <span class="small">여러 번 시도해도 됩니다. <b>닫기</b>를 누른 시점의 점수가 반영됩니다.</span>
     </div>
     <div class="result" id="resultBox" style="display:none">
       <div>종합 점수: <b id="sumScore">—</b></div>
@@ -435,51 +428,27 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   const sumScore = box.querySelector('#sumScore');
   const sumFb    = box.querySelector('#sumFb');
 
-  // 반복 시도 상태
-  let rec=null;
-  let finalText = '';
-  let lastScore = null;
-  let lastFb    = '';
-  let canStart  = true;
+  let rec=null, finalText='', lastScore=null, lastFb='', canStart=true;
 
-  function resetStartUI(){
-    btnStart.classList.remove('rec');
-    btnStart.textContent='● 말하기 시작';
-    btnStart.disabled=false;
-  }
+  function resetStartUI(){ btnStart.classList.remove('rec'); btnStart.textContent='● 말하기 시작'; btnStart.disabled=false; }
 
-  function onResult(e){
-    for (let i = e.resultIndex; i < e.results.length; i++){
-      const r = e.results[i];
-      if (r.isFinal) finalText += (finalText ? ' ' : '') + r[0].transcript;
-    }
-  }
-
+  function onResult(e){ for (let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) finalText += (finalText?' ':'') + r[0].transcript; } }
   function onEnd(){
     const refAll = concatenateLines(lines);
     const sc = scoreSentence(refAll, finalText);
     const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
 
-    lastScore = isNaN(sc)? null : sc;
-    lastFb    = fb.join(' · ');
+    lastScore = isNaN(sc)? null : sc; lastFb = fb.join(' · ');
     sumScore.textContent = (lastScore==null)? '—' : (lastScore + '%');
-    sumFb.textContent = lastFb;
-    resultBox.style.display = '';
+    sumFb.textContent = lastFb; resultBox.style.display = '';
 
     btnStop.disabled = true; btnStop.textContent = '중지됨';
-    resetStartUI();
-
-    rec=null;
-    finalText='';
-    setTimeout(()=>{ canStart=true; }, 200);
+    resetStartUI(); rec=null; finalText=''; setTimeout(()=>{ canStart=true; }, 200);
   }
 
   btnStart.onclick = ()=>{
-    if(!canStart) return;
-    if(rec) return;
-    canStart=false;
-    finalText='';
-
+    if(!canStart || rec) return;
+    canStart=false; finalText='';
     if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
     btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
     btnStop.disabled=false; btnStop.textContent='■ 중지';
@@ -492,10 +461,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     }, 150);
   };
 
-  btnStop.onclick = ()=>{
-    if(rec){ try{ rec.stop(); }catch(_){ } }
-    btnStop.disabled = true; btnStop.textContent = '중지됨';
-  };
+  btnStop.onclick = ()=>{ if(rec){ try{ rec.stop(); }catch(_){ } } btnStop.disabled = true; btnStop.textContent = '중지됨'; };
 
   box.querySelector('#btnClosePanel').onclick = ()=>{
     try{ if(rec){ rec.abort(); } }catch(_){}
@@ -504,7 +470,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     if(lastScore!=null){
       const day=getTodayDay(); const d=ensureDayState(day);
       d.comboScore = lastScore; saveProg(prog);
-      updateProgress();
+      updateProgress(); // ← 진도 게이지/텍스트는 여기서만 갱신됨
       toast(`종합 점수 ${lastScore}% 반영 완료`);
     } else {
       toast('점수 없이 닫았습니다.');
@@ -512,7 +478,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   };
 }
 
-// ===== 100일 캘린더 =====
+// ===== 100-Day Calendar =====
 function renderChallenge100(){
   const grid=document.getElementById('challenge100'); grid.innerHTML='';
   const cur=getTodayDay();
@@ -526,7 +492,7 @@ function renderChallenge100(){
   }
 }
 
-// ===== 기록 =====
+// ===== History =====
 function renderHistory(){
   const box=document.getElementById('history');
   let list = Array.isArray(prog._history) ? [...prog._history] : [];
@@ -548,27 +514,21 @@ function renderHistory(){
   box.innerHTML=''; box.appendChild(frag);
 }
 
-// ===== 치트키 =====
-document.getElementById('btnRetry').onclick=()=>{ const day=getTodayDay(); prog['Day'+day]={ lines:[{heard:false},{heard:false},{heard:false}], done:false, comboScore:null }; saveProg(prog); renderToday(); toast('🔁 오늘 학습을 초기 상태로 되돌렸어요.');};
+// ===== Shortcuts =====
+document.getElementById('btnRetry').onclick=()=>{ const day=getTodayDay(); prog['Day'+day]={ comboScore:null, done:false }; saveProg(prog); renderToday(); updateProgress(); toast('🔁 오늘 학습을 초기 상태로 되돌렸어요.');};
 document.getElementById('btnReset').onclick=()=>{ if(!confirm('정말 전체 데이터를 초기화할까요? (취소 불가)')) return;
   localStorage.removeItem(LS_PROGRESS); prog=loadProg(); prog._startedAt=todayKey(); prog._currentDay=1; prog._history=[]; saveProg(prog);
-  initHeaderKPI(); renderToday(); renderChallenge100(); renderHistory(); toast('🧹 모든 데이터가 초기화됐어요.');
+  renderToday(); renderChallenge100(); renderHistory(); updateProgress(); toast('🧹 모든 데이터가 초기화됐어요.');
 };
 
 // ===== PWA =====
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
-// ===== 부팅 =====
+// ===== Boot =====
 function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
-async function initDiag(){ loadVoices(); populateVoiceSelect(); }
-async function boot(){ await initDiag(); initHeaderKPI(); renderToday(); renderChallenge100(); }
+async function initDiag(){ /* voices */ }
+async function boot(){ initHeaderKPI(); renderToday(); renderChallenge100(); updateProgress(); }
 boot();
 </script>
-
-<!--
-필수 파일:
-- manifest.webmanifest  (/dailyenglish/manifest.webmanifest?v=9)
-- sw.js  (오프라인 캐시; 새 코드 강제적용 위해 캐시 키 업데이트 권장)
--->
 </body>
 </html>
