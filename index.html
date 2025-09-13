@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>영어 말하기 챌린지 — Daily Topic & Lines</title>
+  <title>영어 말하기 챌린지 — Daily Topic & Speaking</title>
   <style>
     :root{
       --bg:#0b1020; --card:#121833; --ink:#e6ebff; --muted:#9aa7d6;
-      --pri:#6ea8ff; --accent:#ffd166; --ok:#22c55e;
+      --pri:#6ea8ff; --accent:#ffd166; --ok:#22c55e; --bad:#ef4444;
       --radius:18px; --shadow:0 12px 36px rgba(0,0,0,.25);
     }
     *{box-sizing:border-box}
@@ -19,7 +19,7 @@
       color:var(--ink); display:flex; align-items:center; justify-content:center; padding:24px;
     }
     .app{
-      width:min(980px, 100%); background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
+      width:min(1100px, 100%); background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
       border:1px solid rgba(255,255,255,.08); border-radius:26px; box-shadow:var(--shadow); overflow:hidden;
     }
     header{
@@ -28,43 +28,36 @@
       border-bottom:1px solid rgba(255,255,255,.08);
     }
     .brand{display:flex; gap:12px; align-items:center}
-    .logo{
-      width:42px; height:42px; border-radius:12px; background:conic-gradient(from 220deg, var(--pri), #9bd2ff);
-      box-shadow:0 6px 18px rgba(110,168,255,.35);
-    }
+    .logo{ width:42px; height:42px; border-radius:12px; background:conic-gradient(from 220deg, var(--pri), #9bd2ff);
+      box-shadow:0 6px 18px rgba(110,168,255,.35);}
     h1{font-size:20px; margin:0}
-    .today{
-      font-size:13px; color:var(--muted)
-    }
+    .today{font-size:13px; color:var(--muted)}
 
-    .controls{
-      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-end;
-    }
+    .controls{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:flex-end; }
     .pill{
       background:#0f1530; border:1px solid rgba(255,255,255,.10); color:var(--ink);
-      padding:10px 14px; border-radius:999px; font-size:13px
+      padding:8px 12px; border-radius:999px; font-size:12px
     }
     .btn{
       background:var(--pri); color:#06142c; border:none; padding:10px 16px; border-radius:12px;
       font-weight:700; cursor:pointer; transition:transform .05s ease; font-size:14px;
     }
-    .btn:active{ transform:translateY(1px) }
+    .btn:disabled{ opacity:.6; cursor:not-allowed }
     .btn.secondary{
       background:#182043; color:var(--ink); border:1px solid rgba(255,255,255,.10);
       font-weight:600;
     }
+    .btn.danger{ background:#ff9aa9; color:#3a0d13; }
 
-    main{ padding:24px; display:grid; grid-template-columns: 1fr 380px; gap:18px }
-    @media (max-width:900px){ main{ grid-template-columns:1fr } }
+    main{ padding:24px; display:grid; grid-template-columns: 1.3fr .7fr; gap:18px }
+    @media (max-width:1000px){ main{ grid-template-columns:1fr } }
 
     .card{
       background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00));
       border:1px solid rgba(255,255,255,.08);
       border-radius:22px; padding:18px; min-height:120px;
     }
-    .topic{
-      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px
-    }
+    .topic{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px }
     .topic-name{
       font-size:22px; font-weight:800; letter-spacing:.2px;
       display:flex; align-items:center; gap:10px;
@@ -74,10 +67,11 @@
       font-size:20px; line-height:1.6; padding:12px 14px; border-radius:16px;
       background:#0e1535; border:1px dashed rgba(255,255,255,.12); min-height:72px;
     }
+    .lines-3{ display:grid; gap:8px }
     .hint{ color:var(--muted); font-size:13px; margin-top:8px }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px }
 
-    .menu{ display:flex; gap:8px; flex-wrap:wrap }
+    .menu{ display:flex; gap:8px; flex-wrap:wrap; max-height:160px; overflow:auto; padding-right:6px }
     .menu button{
       background:#10173a; color:var(--ink); border:1px solid rgba(255,255,255,.10);
       padding:8px 12px; border-radius:12px; cursor:pointer; font-size:13px
@@ -88,6 +82,19 @@
     .side .card{ height:100% }
     .stat{ display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:12px; background:#0f1738; border:1px solid rgba(255,255,255,.08); margin-bottom:10px }
     .stat b{ font-size:14px }
+
+    .recorder{ display:grid; gap:10px; grid-template-columns:1fr; }
+    .indicators{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+    .dot{ width:10px; height:10px; border-radius:50%; background:#8a93b8; }
+    .dot.live{ background:#ff5d73; box-shadow:0 0 0 6px rgba(255,93,115,.15) }
+    .timer{ font-variant-numeric: tabular-nums; font-size:14px; color:var(--muted) }
+
+    .score{ display:grid; gap:10px; }
+    .score-row{ display:flex; justify-content:space-between; align-items:center; padding:10px; border-radius:12px; background:#0f1738; border:1px solid rgba(255,255,255,.08) }
+    .score b{ font-size:14px }
+    .score .val{ font-weight:800 }
+
+    .transcript{ font-size:14px; color:var(--muted); white-space:pre-wrap; background:#0f1433; border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px; min-height:46px }
   </style>
 </head>
 <body>
@@ -101,8 +108,9 @@
         </div>
       </div>
       <div class="controls">
-        <span class="pill" id="autoStatus">⏱ 매일 00:00 자동 주제 변경 (KST)</span>
+        <span class="pill">⏱ 매일 00:00 자동 주제 변경 (KST)</span>
         <button class="btn secondary" id="nextLineBtn">새 문장</button>
+        <button class="btn" id="toggle3Btn">3문장 연속 말하기: OFF</button>
       </div>
     </header>
 
@@ -116,7 +124,11 @@
           </div>
           <div class="meta" id="progress">0 / 0</div>
         </div>
-        <div class="line" id="lineBox">문장을 불러오고 있어요…</div>
+
+        <div id="lineArea">
+          <div class="line" id="lineBox">문장을 불러오고 있어요…</div>
+        </div>
+
         <div class="hint">Tip: “새 문장” 버튼으로 같은 주제의 다음 문장을 받아보세요. (하루 동안은 중복 없이 순서 제공)</div>
 
         <div class="row">
@@ -125,114 +137,72 @@
       </section>
 
       <aside class="side">
-        <div class="card">
-          <div class="stat"><span>주제 자동 선택 기준</span><b id="baseDateInfo">—</b></div>
-          <div class="stat"><span>오늘의 주제 인덱스</span><b id="todayIdx">—</b></div>
-          <div class="stat"><span>현재 선택된 주제</span><b id="currentTopic">—</b></div>
-          <div class="stat"><span>오늘 제공 가능한 문장 수</span><b id="lineCount">—</b></div>
-          <div class="stat"><span>다음 자동 변경 예정</span><b id="nextMidnight">—</b></div>
+        <div class="card recorder">
+          <div class="indicators">
+            <div class="dot" id="recDot"></div>
+            <span id="recStatus">대기 중</span>
+            <span class="timer" id="timer">00:00</span>
+          </div>
+          <div class="row">
+            <button class="btn" id="startBtn">▶ 말하기 시작</button>
+            <button class="btn danger" id="stopBtn" disabled>■ 정지</button>
+            <button class="btn secondary" id="resetBtn">초기화</button>
+          </div>
+
+          <div class="score">
+            <div class="score-row"><span>점수</span><span class="val" id="scoreVal">—</span></div>
+            <div class="score-row"><span>모드</span><span class="val" id="modeVal">단문(1문장)</span></div>
+          </div>
+
+          <div class="transcript" id="transcriptBox">전사 결과가 여기에 표시됩니다.</div>
+
+          <div class="card" style="background:transparent;border:none;padding:0;margin-top:8px">
+            <div class="stat"><span>주제 자동 선택 기준</span><b id="baseDateInfo">—</b></div>
+            <div class="stat"><span>오늘의 주제 인덱스</span><b id="todayIdx">—</b></div>
+            <div class="stat"><span>현재 선택된 주제</span><b id="currentTopic">—</b></div>
+            <div class="stat"><span>오늘 제공 가능한 문장 수</span><b id="lineCount">—</b></div>
+            <div class="stat"><span>다음 자동 변경 예정</span><b id="nextMidnight">—</b></div>
+          </div>
         </div>
       </aside>
     </main>
   </div>
 
+  <!-- topics.js에서 window.TOPICS 제공 -->
+  <script src="topics.js"></script>
+
   <script>
-    // ====== 유틸: KST 날짜 문자열(YYYY-MM-DD) ======
+    // ========= 날짜/토픽(자정 자동 변경) =========
     const toKSTDateString = (d = new Date()) =>
       new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
 
-    // ====== 기준 시작일(원하시면 바꾸셔도 됩니다) ======
-    const START_DATE_STR = '2025-01-01'; // KST 기준
-    const todayStrKST = toKSTDateString(new Date());
+    const START_DATE_STR = '2025-01-01';
+    let todayStrKST = toKSTDateString(new Date());
     document.getElementById('todayStr').textContent = `KST ${todayStrKST}`;
 
-    // ====== 토픽(주제) 및 문장 세트 ======
-    // 각 토픽은 "그 토픽에서 실제로 쓸 법한 문장"으로 구성했습니다.
-    const TOPICS = [
-      {
-        key: 'coffee',
-        label: '☕ Coffee',
-        lines: [
-          "I’d like a cup of coffee, please.",
-          "Do you prefer hot coffee or iced coffee?",
-          "Could I get a latte with an extra shot?",
-          "This café makes the best espresso in town.",
-          "I usually take my coffee black in the morning.",
-          "Is there any non-dairy milk available?",
-          "Can I have it to go?",
-          "What roast do you recommend for a smooth taste?",
-          "I’m trying to cut down on caffeine this week.",
-          "Could you make it less sweet, please?"
-        ]
-      },
-      {
-        key: 'commuting',
-        label: '🚇 Commuting',
-        lines: [
-          "I usually commute by subway.",
-          "The traffic is terrible during rush hour.",
-          "I transfer at City Hall to get to my office.",
-          "I listen to podcasts while commuting.",
-          "I try to leave earlier to avoid the crowd.",
-          "The express train saves me about ten minutes.",
-          "I missed the bus and had to wait for the next one.",
-          "Do you know which line goes to Gangnam?",
-          "I prefer standing near the door for a quick exit.",
-          "I often read an e-book on the way."
-        ]
-      },
-      {
-        key: 'grocery',
-        label: '🛒 Grocery',
-        lines: [
-          "Where can I find the dairy section?",
-          "Is there a discount on fresh produce today?",
-          "Could you weigh these apples for me?",
-          "Do you have any reusable bags?",
-          "I’m looking for whole grain bread.",
-          "Is there a self-checkout counter?",
-          "Are these organic?",
-          "Can I pay by card?",
-          "Do you have a loyalty program?",
-          "What time do you close on weekends?"
-        ]
-      },
-      {
-        key: 'smalltalk',
-        label: '💬 Small Talk',
-        lines: [
-          "How’s your day going so far?",
-          "That’s a great question—let me think.",
-          "Have you tried the new place down the street?",
-          "I totally agree with you on that.",
-          "By the way, how was your weekend?",
-          "I’ve been meaning to ask you about your project.",
-          "Sounds good to me!",
-          "Could you share your thoughts on this?",
-          "It’s nice to finally meet you in person.",
-          "Let’s catch up later this week."
-        ]
-      },
-      {
-        key: 'school',
-        label: '🏫 School',
-        lines: [
-          "Please line up quietly, everyone.",
-          "Let’s review what we learned yesterday.",
-          "Raise your hand if you have a question.",
-          "Work with your partner for this activity.",
-          "We’ll have a short quiz on Friday.",
-          "Please submit your homework on time.",
-          "Let’s take a five-minute break.",
-          "Share your ideas with the class.",
-          "Remember to use your inside voice.",
-          "Well done! Keep it up."
-        ]
-      }
-    ];
+    const TOPICS = Array.isArray(window.TOPICS) ? window.TOPICS : [];
+    const $menu = document.getElementById('menu');
+    const $topicLabel = document.getElementById('topicLabel');
+    const $topicTag = document.getElementById('topicTag');
+    const $lineArea = document.getElementById('lineArea');
+    const $lineBox = document.getElementById('lineBox');
+    const $progress = document.getElementById('progress');
+    const $nextBtn = document.getElementById('nextLineBtn');
+    const $baseDateInfo = document.getElementById('baseDateInfo');
+    const $todayIdx = document.getElementById('todayIdx');
+    const $currentTopic = document.getElementById('currentTopic');
+    const $lineCount = document.getElementById('lineCount');
+    const $nextMidnight = document.getElementById('nextMidnight');
+    const $toggle3Btn = document.getElementById('toggle3Btn');
 
-    // ====== 도우미: 안정적인 '하루-토픽' 고정 셔플을 위한 시드형 랜덤 ======
-    // 해시 → 시드 → mulberry32 PRNG
+    const state = {
+      auto: true,
+      topicIndex: 0,
+      todaysOrder: [],
+      pointer: 0,
+      mode3: false, // 3문장 연속
+    };
+
     function cyrb128(str) {
       let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
       for (let i = 0, k; i < str.length; i++) {
@@ -250,7 +220,6 @@
       return h;
     }
     function mulberry32(a){ return function(){let t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
-
     function stableDailyShuffle(arr, seedStr){
       const seed = cyrb128(seedStr);
       const rand = mulberry32(seed);
@@ -261,42 +230,16 @@
       }
       return a;
     }
-
-    // ====== 날짜 → 일수 차이 ======
-    function daysBetweenUTC(yyyy_mm_dd_A, yyyy_mm_dd_B){
-      const msA = Date.parse(yyyy_mm_dd_A); // UTC로 파싱
-      const msB = Date.parse(yyyy_mm_dd_B);
+    function daysBetweenUTC(a, b){
+      const msA = Date.parse(a);
+      const msB = Date.parse(b);
       return Math.floor((msB - msA) / 86400000);
     }
-
-    // ====== 오늘의 자동 토픽 인덱스 ======
     function getTodayTopicIndex(){
       const days = daysBetweenUTC(START_DATE_STR, todayStrKST);
       return ((days % TOPICS.length) + TOPICS.length) % TOPICS.length;
     }
 
-    // ====== 상태 ======
-    const state = {
-      auto: true,                 // 자동 주제 모드 (상시 ON)
-      topicIndex: 0,              // 현재 선택된 토픽 인덱스
-      todaysOrder: [],            // 오늘의 (해당 토픽) 문장 순서(중복 없이)
-      pointer: 0,                 // 오늘 보여준 개수
-    };
-
-    // ====== UI 참조 ======
-    const $menu = document.getElementById('menu');
-    const $topicLabel = document.getElementById('topicLabel');
-    const $topicTag = document.getElementById('topicTag');
-    const $lineBox = document.getElementById('lineBox');
-    const $progress = document.getElementById('progress');
-    const $nextBtn = document.getElementById('nextLineBtn');
-    const $baseDateInfo = document.getElementById('baseDateInfo');
-    const $todayIdx = document.getElementById('todayIdx');
-    const $currentTopic = document.getElementById('currentTopic');
-    const $lineCount = document.getElementById('lineCount');
-    const $nextMidnight = document.getElementById('nextMidnight');
-
-    // ====== 메뉴 생성 ======
     function renderMenu(){
       $menu.innerHTML = '';
       TOPICS.forEach((t, idx) => {
@@ -304,7 +247,7 @@
         b.textContent = `${idx+1}. ${t.label}`;
         b.dataset.idx = idx;
         b.addEventListener('click', () => {
-          state.auto = false; // 수동 선택하면 자동 표시만 OFF 상태로 보여줌(자정되면 다시 자동 주제로 전환)
+          state.auto = false;
           selectTopic(idx, 'manual');
         });
         $menu.appendChild(b);
@@ -313,91 +256,304 @@
     }
     function refreshMenuActive(){
       const btns = $menu.querySelectorAll('button');
-      btns.forEach(b => {
-        const isActive = Number(b.dataset.idx) === state.topicIndex;
-        b.classList.toggle('active', isActive);
-      });
+      btns.forEach(b => b.classList.toggle('active', Number(b.dataset.idx) === state.topicIndex));
     }
 
-    // ====== 토픽 선택 & 오늘 순서 구성 ======
+    function buildLinesView(){
+      if(!state.mode3){
+        $lineArea.innerHTML = `<div class="line" id="lineBox"></div>`;
+      }else{
+        $lineArea.innerHTML = `
+          <div class="lines-3">
+            <div class="line" id="lineBox0"></div>
+            <div class="line" id="lineBox1"></div>
+            <div class="line" id="lineBox2"></div>
+          </div>`;
+      }
+    }
+
     function selectTopic(idx, reason='auto'){
       state.topicIndex = idx;
-      const topic = TOPICS[idx];
-      // 하루-토픽 고정 셔플: "YYYY-MM-DD|topicKey"로 시드 고정
-      state.todaysOrder = stableDailyShuffle(topic.lines, `${todayStrKST}|${topic.key}`);
+      const topic = TOPICS[idx] || {label:'—', lines:[]};
+      state.todaysOrder = stableDailyShuffle(topic.lines || [], `${todayStrKST}|${topic.key||idx}`);
       state.pointer = 0;
-      // UI 갱신
-      $topicLabel.textContent = topic.label;
+
+      $topicLabel.textContent = topic.label || '—';
       $topicTag.textContent = reason === 'auto' ? 'AUTO' : 'MANUAL';
-      $currentTopic.textContent = `${topic.label}`;
-      $lineCount.textContent = `${topic.lines.length}`;
+      $currentTopic.textContent = `${topic.label || '—'}`;
+      $lineCount.textContent = `${(topic.lines||[]).length}`;
       refreshMenuActive();
+
+      buildLinesView();
       showNextLine(true);
+
+      document.dispatchEvent(new CustomEvent('topicChanged', {
+        detail: { index: idx, key: topic.key, label: topic.label, dateKST: todayStrKST, reason }
+      }));
     }
 
-    // ====== 다음 문장 보여주기 (중복 없이) ======
     function showNextLine(resetIfEnd=false){
       const lines = state.todaysOrder;
-      if(lines.length === 0){
-        $lineBox.textContent = '이 토픽에는 아직 문장이 없습니다.';
+      if(!lines || lines.length === 0){
+        if(state.mode3){
+          for(let i=0;i<3;i++){ const el=document.getElementById('lineBox'+i); if(el) el.textContent='문장이 없습니다.'; }
+        } else {
+          document.getElementById('lineBox').textContent = '문장이 없습니다.';
+        }
         $progress.textContent = '0 / 0';
         return;
       }
-      if(state.pointer >= lines.length){
-        if(resetIfEnd){
-          state.pointer = 0; // 끝까지 봤으면 처음부터 재시작(그래도 오늘 순서는 유지되어 중복 느낌 최소화)
-        } else {
-          state.pointer = lines.length - 1; // 방어
+
+      if(!state.mode3){
+        if(state.pointer >= lines.length){
+          if(resetIfEnd) state.pointer = 0; else state.pointer = lines.length - 1;
         }
+        const line = lines[state.pointer];
+        document.getElementById('lineBox').textContent = line;
+        $progress.textContent = `${state.pointer+1} / ${lines.length}`;
+        document.dispatchEvent(new CustomEvent('lineAdvanced', {
+          detail: { topicIndex: state.topicIndex, lineIndex: state.pointer, text: line, dateKST: todayStrKST }
+        }));
+        state.pointer++;
+      } else {
+        // 3문장 연속 말하기: 현재 포인터부터 3개 표시
+        for(let i=0;i<3;i++){
+          const idx = (state.pointer + i) % lines.length;
+          const el = document.getElementById('lineBox'+i);
+          if(el) el.textContent = lines[idx];
+        }
+        const shown = Math.min(3, lines.length);
+        $progress.textContent = `${state.pointer+shown} / ${lines.length}`;
+        // pointer는 정지 후에 3 증가 처리(연속 세트 완료 시점)
       }
-      const line = lines[state.pointer];
-      $lineBox.textContent = line;
-      $progress.textContent = `${state.pointer+1} / ${lines.length}`;
-      state.pointer++;
     }
 
-    // ====== 다음 자정(KST) 타이머 설정: 자정에 자동 주제로 전환 ======
     function scheduleMidnightSwitch(){
-      // KST에서의 다음 자정까지 남은 ms 계산
-      const now = new Date();
-      const nowKSTStr = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul', hourCycle:'h23', hour:'2-digit', minute:'2-digit'}).format(now);
-      // 다음 자정 시각 문자열 만들기
-      const today = new Date(now);
-      const kstDateStr = toKSTDateString(today); // YYYY-MM-DD
-      // 자정(다음 날 00:00 KST)의 UTC ms 계산
-      const nextDay = new Date(Date.parse(kstDateStr) + 86400000); // UTC 기준 다음날 00:00
-      const msUntil = nextDay.getTime() - Date.now();
+      const kstTodayStr = toKSTDateString(new Date());
+      const nextDayUTC = new Date(Date.parse(kstTodayStr) + 86400000);
+      const msUntil = nextDayUTC.getTime() - Date.now();
       const etaMin = Math.max(0, Math.round(msUntil/60000));
       $nextMidnight.textContent = `약 ${etaMin}분 후`;
       setTimeout(() => {
-        // 날짜 문자열 갱신
         const newToday = toKSTDateString(new Date());
         if(newToday !== todayStrKST){
-          // 자정이 지나면 자동 주제로 전환
+          todayStrKST = newToday;
+          document.getElementById('todayStr').textContent = `KST ${todayStrKST}`;
           state.auto = true;
-          const idx = getTodayTopicIndex();
-          selectTopic(idx, 'auto');
-          document.getElementById('todayStr').textContent = `KST ${newToday}`;
-        } else {
-          // 혹시 환경에 따라 변동이 없으면 재스케줄
+          selectTopic(getTodayTopicIndex(), 'auto');
         }
-        // 다음 자정도 다시 스케줄
         scheduleMidnightSwitch();
       }, Math.max(1000, msUntil));
     }
 
-    // ====== 초기화 ======
+    // ========= 녹음/인식/점수(“정지 버튼 필수”) =========
+    const $start = document.getElementById('startBtn');
+    const $stop = document.getElementById('stopBtn');
+    const $reset = document.getElementById('resetBtn');
+    const $recDot = document.getElementById('recDot');
+    const $recStatus = document.getElementById('recStatus');
+    const $timer = document.getElementById('timer');
+    const $scoreVal = document.getElementById('scoreVal');
+    const $modeVal = document.getElementById('modeVal');
+    const $transcript = document.getElementById('transcriptBox');
+
+    let mediaRecorder, chunks = [];
+    let recStartedAt = 0, timerId = null;
+    let recognition = null, recogActive = false;
+    let capturedTranscript = '';
+
+    function fmt(ms){
+      const s = Math.floor(ms/1000); const m = Math.floor(s/60); const ss = s%60;
+      return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
+    function startTimer(){
+      stopTimer();
+      timerId = setInterval(()=>{ $timer.textContent = fmt(Date.now()-recStartedAt); }, 200);
+    }
+    function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
+
+    function setupASR(){
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SR) return null;
+      const r = new SR();
+      r.lang = 'en-US';
+      r.continuous = true;     // 끊김 없이
+      r.interimResults = true; // 실시간 자막
+      r.onresult = (e)=>{
+        let t = '';
+        for(let i = e.resultIndex; i<e.results.length; i++){
+          t += e.results[i][0].transcript;
+        }
+        capturedTranscript = t.trim();
+        $transcript.textContent = capturedTranscript || '…';
+      };
+      r.onerror = ()=>{};
+      r.onend = ()=>{
+        recogActive = false;
+      };
+      return r;
+    }
+
+    function setLiveUI(live){
+      $recDot.classList.toggle('live', live);
+      $recStatus.textContent = live ? '녹음 중(정지 버튼 필수)' : '대기 중';
+      $start.disabled = live;
+      $stop.disabled = !live;
+      $nextBtn.disabled = live; // 녹음 중에는 다음문장 금지
+      $menu.querySelectorAll('button').forEach(b=>b.disabled = live);
+      $toggle3Btn.disabled = live;
+    }
+
+    async function startRecording(){
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true }, video:false });
+        const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+        mediaRecorder = new MediaRecorder(stream, mime?{mimeType:mime}:{});
+        chunks = [];
+        mediaRecorder.ondataavailable = (e)=>{ if(e.data.size>0) chunks.push(e.data); };
+        mediaRecorder.onstop = ()=>{ stream.getTracks().forEach(t=>t.stop()); };
+        mediaRecorder.start(); // 자동종료 없음 → 반드시 STOP 필요
+
+        // ASR
+        recognition = setupASR();
+        if(recognition){ capturedTranscript=''; recognition.start(); recogActive=true; }
+
+        recStartedAt = Date.now();
+        startTimer();
+        setLiveUI(true);
+      }catch(err){
+        alert('마이크 권한을 허용해 주세요.\n' + err);
+      }
+    }
+
+    function stopRecording(){
+      if(mediaRecorder && mediaRecorder.state !== 'inactive'){ mediaRecorder.stop(); }
+      if(recognition && recogActive){ try{ recognition.stop(); }catch{} recogActive=false; }
+      stopTimer();
+      setLiveUI(false);
+
+      // 3문장 모드면 포인터를 3 앞으로 이동(세트 완료 시점)
+      if(state.mode3) state.pointer = (state.pointer + 3) % (state.todaysOrder.length || 1);
+
+      // 스코어 계산
+      const targets = getTargetsForScoring();
+      const result = scoreSpeech(capturedTranscript, targets);
+      $scoreVal.textContent = result.toFixed(0);
+    }
+
+    function resetAll(){
+      if(mediaRecorder && mediaRecorder.state !== 'inactive'){ mediaRecorder.stop(); }
+      if(recognition && recogActive){ try{ recognition.stop(); }catch{} recogActive=false; }
+      stopTimer();
+      setLiveUI(false);
+      $timer.textContent = '00:00';
+      $scoreVal.textContent = '—';
+      $transcript.textContent = '전사 결과가 여기에 표시됩니다.';
+      capturedTranscript = '';
+    }
+
+    // ===== 점수 계산: (1) 가능 시 ASR 유사도 (2) 대체: 발화 시간 기반 =====
+    function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim(); }
+    function levenshtein(a,b){
+      const m = a.length, n = b.length;
+      if(!m) return n; if(!n) return m;
+      const dp = Array.from({length:m+1}, ()=>new Array(n+1).fill(0));
+      for(let i=0;i<=m;i++) dp[i][0]=i;
+      for(let j=0;j<=n;j++) dp[0][j]=j;
+      for(let i=1;i<=m;i++){
+        for(let j=1;j<=n;j++){
+          const cost = a[i-1]===b[j-1]?0:1;
+          dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost);
+        }
+      }
+      return dp[m][n];
+    }
+    function similarityScore(hyp, ref){
+      const A = norm(hyp), B = norm(ref);
+      if(!A && !B) return 100;
+      if(!A && B) return 0;
+      const dist = levenshtein(A, B);
+      const maxLen = Math.max(A.length, B.length)||1;
+      const sim = Math.max(0, 1 - dist/maxLen);
+      return sim*100;
+    }
+    function scoreSpeech(transcript, targets){
+      if(transcript && transcript.trim()){
+        // 3문장 모드면 Transcript를 문장 단위로 쪼개 최대 3개 매칭
+        let parts = transcript.split(/[.?!]/).map(s=>s.trim()).filter(Boolean);
+        if(state.mode3){
+          parts = parts.slice(0,3);
+          const scores = targets.map((t,i)=> similarityScore(parts[i]||'', t));
+          return avg(scores);
+        } else {
+          return similarityScore(transcript, targets[0]);
+        }
+      } else {
+        // 대체 점수: 발화 시간 기반 (최대 20초=100점 스케일)
+        const dur = (Date.now()-recStartedAt)/1000;
+        const capped = Math.min(20, Math.max(0, dur));
+        return (capped/20)*100;
+      }
+    }
+    function avg(arr){ return arr.reduce((a,b)=>a+b,0) / (arr.length||1); }
+
+    function getTargetsForScoring(){
+      const lines = state.todaysOrder;
+      if(!lines || !lines.length) return [''];
+      if(!state.mode3) return [ (document.getElementById('lineBox')?.textContent)||lines[state.pointer-1]||'' ];
+      // 3문장: 현재 표시 중 3개
+      const L0 = document.getElementById('lineBox0')?.textContent || '';
+      const L1 = document.getElementById('lineBox1')?.textContent || '';
+      const L2 = document.getElementById('lineBox2')?.textContent || '';
+      return [L0, L1, L2];
+    }
+
+    // ========= 초기화 & 이벤트 =========
     function init(){
+      $baseDateInfo.textContent = `기준: ${START_DATE_STR}`;
       renderMenu();
       const todayIdx = getTodayTopicIndex();
-      $baseDateInfo.textContent = `기준: ${START_DATE_STR}`;
       $todayIdx.textContent = `${todayIdx+1} / ${TOPICS.length}`;
       selectTopic(todayIdx, 'auto');
-      $nextBtn.addEventListener('click', () => showNextLine());
       scheduleMidnightSwitch();
+
+      $nextBtn.addEventListener('click', ()=>{
+        if(state.mode3){
+          // 3문장 모드: 다음 3개 미리보기
+          state.pointer = (state.pointer + 3) % (state.todaysOrder.length || 1);
+          showNextLine(true);
+        } else {
+          showNextLine();
+        }
+      });
+
+      $toggle3Btn.addEventListener('click', ()=>{
+        if($stop.disabled === false){
+          alert('녹음 중에는 모드를 바꿀 수 없습니다. 먼저 정지해 주세요.');
+          return;
+        }
+        state.mode3 = !state.mode3;
+        $modeVal.textContent = state.mode3 ? '연속(3문장)' : '단문(1문장)';
+        $toggle3Btn.textContent = `3문장 연속 말하기: ${state.mode3?'ON':'OFF'}`;
+        buildLinesView();
+        showNextLine(true);
+      });
+
+      $start.addEventListener('click', startRecording);
+      $stop.addEventListener('click', stopRecording);
+      $reset.addEventListener('click', resetAll);
     }
 
     init();
+
+    // 공개 디버그
+    window._DailyTopicApp = {
+      get state(){ return {...state}; },
+      get topic(){ return TOPICS[state.topicIndex]; },
+      next: ()=> $nextBtn.click(),
+      select: (i)=>selectTopic(i,'manual'),
+      todayStrKST: ()=>todayStrKST,
+    };
   </script>
 </body>
 </html>
