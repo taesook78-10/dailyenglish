@@ -10,62 +10,127 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/dailyenglish/icon-192.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/dailyenglish/icon-192.png">
   <style>
-  :root{ --bg:#0b1020; --card:#111a34; --ink:#e8eefc; --muted:#a7b3d6; --pri:#5b8cff; --good:#21d39b; --warn:#ffb454; --bad:#ff5c7a; --ring:#31457a; --shadow:0 12px 40px rgba(0,0,0,.35); --radius:18px; }
+  :root{
+    --bg:#0b1020; --card:#111a34; --ink:#e8eefc; --muted:#9fb0df;
+    --pri:#5b8cff; --good:#21d39b; --warn:#ffb454; --bad:#ff5c7a;
+    --ring:#31457a; --ring-strong:#4a63a8;
+    --shadow:0 12px 40px rgba(0,0,0,.35);
+    --radius:18px; --radius-sm:12px;
+    --pad:16px; --gap:10px; --gap-lg:14px;
+  }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, sans-serif;color:var(--ink);
-    background:radial-gradient(80% 60% at 10% 0%,#15224b 0%,#0b1020 60%), radial-gradient(80% 60% at 100% 100%,#0f1834 0%,#0b1020 60%);}
+  body{
+    margin:0;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(80% 60% at 10% 0%,#15224b 0%,#0b1020 60%),
+      radial-gradient(80% 60% at 100% 100%,#0f1834 0%,#0b1020 60%);
+    -webkit-tap-highlight-color: transparent;
+  }
   .wrap{max-width:1100px;margin:0 auto;padding:20px}
   header{display:flex;align-items:center;gap:14px;margin:6px 0 14px;flex-wrap:wrap}
   h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.2px}
   .badge{padding:6px 10px;border-radius:999px;background:rgba(91,140,255,.15);color:#cfe0ff;border:1px solid var(--ring);font-size:12px}
   nav{display:flex; gap:8px; margin:10px 0 16px; flex-wrap:wrap; align-items:center}
-  .tab{padding:10px 14px;border-radius:12px;background:#101733;border:1px solid var(--ring);cursor:pointer;color:#a7b3d6}
+  .tab{padding:10px 14px;border-radius:12px;background:#101733;border:1px solid var(--ring);cursor:pointer;color:#a7b3d6; transition:filter .15s}
   .tab.active{background:#141f45;color:var(--ink);border-color:#3a5296}
-  select{appearance:none;background:#101733;border:1px solid var(--ring);color:#e8eefc;padding:8px 10px;border-radius:10px;min-height:40px}
+  .tab:focus-visible{outline:2px solid var(--ring-strong); outline-offset:2px}
+  select{
+    appearance:none;background:#101733;border:1px solid var(--ring);color:#e8eefc;
+    padding:10px 12px;border-radius:10px;min-height:44px;
+  }
   .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
   @media (max-width:960px){.grid{grid-template-columns:1fr;}}
-  .card{background:linear-gradient(180deg,#111a34,#0f1731);border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow)}
-  .card h2{font-size:18px;margin:0 0 6px}
-  .card .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 0}
-  .card .body{padding:12px 14px 16px}
-  .title{font-size:26px;font-weight:900;letter-spacing:.3px}
-  .subtitle{font-size:13px;color:#a7b3d6}
-  .line{border:1px solid var(--ring);border-radius:14px;padding:12px;margin:8px 0;background:#0f1731}
-  .line p{margin:0 0 6px;font-size:18px;line-height:1.45}
-  .line p.ko{margin:0 0 8px; font-size:15px; line-height:1.5; color:#cbd4f5; display:block !important;}
+  .card{
+    background:linear-gradient(180deg,#111a34,#0f1731);
+    border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow)
+  }
+  .card .hd{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 18px 0}
+  .card .body{padding:14px 18px 20px}
+  .title{font-size:26px;margin-top:4px;font-weight:900;letter-spacing:.3px}
+  .subtitle{font-size:13px;color:var(--muted)}
+  .line{
+    border:1px solid var(--ring);
+    border-radius:16px;
+    padding:14px;
+    margin:12px 0;
+    background:#0f1731
+  }
+  .line p{margin:0 0 8px;font-size:18px;line-height:1.5}
+  .line p.ko{margin:0 0 10px; font-size:15.5px; line-height:1.6; color:#cbd4f5}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-  .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:40px}
+  .btn{
+    appearance:none;border:none;border-radius:12px;padding:10px 14px;
+    background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:44px;
+    transition:transform .06s ease, filter .15s ease, box-shadow .15s ease;
+  }
   .btn:hover{filter:brightness(1.05)}
+  .btn:active{transform:translateY(1px)}
   .btn[disabled]{opacity:.6;cursor:not-allowed}
-  .btn.pri{background:linear-gradient(180deg,#355bff,#2b4bd4);border-color:#3b57e0}
+  .btn.pri{background:linear-gradient(180deg,#3d64ff,#2b4bd4);border-color:#3b57e0}
   .btn.warn{background:#3a2a0e;border-color:#9f6b18}
   .btn.ghost{background:transparent;border-color:#2b3f7a}
   .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
+  .btn:focus-visible{outline:2px solid var(--ring-strong); outline-offset:2px; box-shadow:0 0 0 4px rgba(91,140,255,.18)}
 
-  .score{font-weight:800}
-  .meter{height:10px;background:#0e1330;border-radius:12px;border:1px solid var(--ring);overflow:hidden}
+  .chip{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 12px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px
+  }
+  .chip::before{
+    content:''; width:8px; height:8px; border-radius:50%;
+    background:linear-gradient(180deg,#a7baff,#5b8cff); box-shadow:0 0 0 2px rgba(91,140,255,.15);
+  }
+  .score{font-weight:900}
+
+  .meter{height:12px;background:#0e1330;border-radius:999px;border:1px solid var(--ring);overflow:hidden}
   .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
+
   .kpi{display:flex;gap:8px;flex-wrap:wrap}
-  .kpi .chip{padding:8px 10px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px}
-  .calendar{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
-  @media (max-width:520px){ .calendar{grid-template-columns:repeat(7,1fr);} .line p{font-size:16px} .title{font-size:22px}}
-  .day{aspect-ratio:1/1;border:1px dashed #2d3d72;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0e1430;color:#a7b3d6}
-  .day.done{border-style:solid;background:radial-gradient(100% 100% at 30% 20%,rgba(33,211,155,.25),transparent 60%)}
+
+  .calendar{
+    display:grid;grid-template-columns:repeat(10,1fr);gap:8px
+  }
+  .day{
+    aspect-ratio:1/1;border:1px solid #2d3d72;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    background:#0e1430;color:#c9d4ff;font-weight:700; font-size:14px;
+    transition:filter .15s, transform .06s;
+  }
+  .day:hover{filter:brightness(1.06)}
+  .day:active{transform:translateY(1px)}
+  .day.done{
+    border-color:#4a63a8;background:radial-gradient(100% 100% at 30% 20%,rgba(33,211,155,.25),transparent 60%)
+  }
+  @media (max-width:520px){
+    .calendar{grid-template-columns:repeat(7,1fr)}
+    .day{font-size:13px}
+    .line p{font-size:16px}
+    .title{font-size:22px}
+  }
+
   .toast{position:fixed;inset:auto 0 18px 0;display:flex;justify-content:center;pointer-events:none}
   .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
+
   .small{font-size:12px;color:#a7b3d6}
-  .hint{font-size:12px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:8px 10px;border-radius:10px}
+  .hint{
+    font-size:12.5px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;
+    padding:10px 12px;border-radius:10px
+  }
 
-  .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.5); z-index:9999;}
-  .practice .box{width:min(720px,94vw); background:#101733; border:1px solid var(--ring); border-radius:16px; padding:14px; box-shadow:var(--shadow);}
-  .practice .box h3{margin:0 0 10px; font-size:18px;}
-  .practice .ref{font-size:14px; color:#cfe0ff; margin:6px 0 10px; white-space:pre-wrap}
-  .practice .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
-  .practice .result{margin-top:10px; padding:10px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
-  .feedback{display:block; font-size:12px; color:#cfe0ff; opacity:.95}
+  /* 연속 말하기 패널 */
+  .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:9999;}
+  .practice .box{width:min(720px,94vw); max-height:92vh; overflow:auto; background:#101733; border:1px solid var(--ring); border-radius:16px; padding:16px 16px 14px; box-shadow:var(--shadow);}
+  .practice .box h3{margin:0 0 12px; font-size:18px;}
+  .practice .ref{font-size:14.5px; color:#cfe0ff; margin:6px 0 12px; white-space:pre-wrap; line-height:1.6}
+  .practice .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px}
+  .practice .result{margin-top:12px; padding:12px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
+  .feedback{display:block; font-size:12.5px; color:#cfe0ff; opacity:.95}
 
+  /* 숨김 배지 */
   #diagSupport, #diagVoices { display:none !important; }
   </style>
 </head>
@@ -103,8 +168,7 @@
             <div class="title" id="dayTitle">—</div>
           </div>
           <div class="kpi">
-            <div class="chip">종합 점수: <span class="score" id="avgScore">—</span></div>
-            <div class="chip">진도: <span id="progressText">0%</span></div>
+            <div class="chip">점수: <span class="score" id="avgScore">—</span></div>
           </div>
         </div>
         <div class="body" id="lines"></div>
@@ -113,8 +177,8 @@
       <div class="card">
         <div class="hd"><h2>오늘의 목표</h2><div class="chip">80점 이상 성공</div></div>
         <div class="body">
-          <div class="meter" title="3문장 연속 말하기 종합 점수"><i id="meterBar"></i></div>
-          <div style="height:10px"></div>
+          <div class="meter" title="3문장 연속 말하기 점수"><i id="meterBar"></i></div>
+          <div style="height:12px"></div>
           <button class="btn pri" id="markDone" disabled>✔ 오늘 완료로 표시</button>
           <div style="height:12px"></div>
           <div class="hint">세 문장을 모두 듣고(▶︎) <b>3문장 연속 말하기(점수 반영)</b>에서 80점 이상이면 완료할 수 있어요.</div>
@@ -221,12 +285,8 @@ async function speakQueue(arr,onStart,onEnd){ try{ onStart&&onStart(); for(const
 function speak(text){ return speakQueue([text]); }
 
 // ===== STT & Scoring =====
-function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>onErrorHandler(e, rec, {onResult,onEnd,continuous,interim}); rec.onend=()=>onEnd&&onEnd(); return rec; }
-function onErrorHandler(e, rec, ctx){
-  // 연습/연속 공통: 일시 오류는 자동 복구
-  const err = e && e.error || '';
-  if(err==='no-speech' || err==='network' || err==='audio-capture'){ /* swallow; onend에서 재시작 */ }
-}
+function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>onErrorHandler(e); rec.onend=()=>onEnd&&onEnd(); return rec; }
+function onErrorHandler(e){ const err=e&&e.error||''; if(err==='no-speech'||err==='network'||err==='audio-capture'){ /* 일시 오류는 onend에서 복구 */ } }
 function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) d[i][0]=i; for(let j=0;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
 function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
 function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0; const dist=levenshtein(A,B); const max=Math.max(A.length,B.length)||1; return Math.max(0, Math.round((1-dist/max)*100)); }
@@ -237,7 +297,7 @@ function wordDiffFeedback(ref, hyp){ const R=tokenize(ref), H=tokenize(hyp); if(
 const tabs=document.querySelectorAll('.tab');
 const views={home:document.getElementById('home'),challenge:document.getElementById('challenge'),progress:document.getElementById('progress')};
 const elDayNum=document.getElementById('dayNum'); const elTitle=document.getElementById('dayTitle'); const elLines=document.getElementById('lines');
-const elAvg=document.getElementById('avgScore'); const elProgText=document.getElementById('progressText'); const elMeter=document.getElementById('meterBar');
+const elAvg=document.getElementById('avgScore'); const elMeter=document.getElementById('meterBar');
 const btnRetry=document.getElementById('btnRetry'); const btnReset=document.getElementById('btnReset');
 
 for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classList.remove('active')); t.classList.add('active');
@@ -280,7 +340,7 @@ function renderToday(){
     const row=document.createElement('div'); row.className='row';
 
     const btnPlay=document.createElement('button'); btnPlay.className='btn'; btnPlay.textContent='▶︎ 듣기';
-    btnPlay.onclick=()=>{ speak(text); /* 듣기는 진도에 영향 X */ };
+    btnPlay.onclick=()=>{ speak(text); };
 
     const btnRec=document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기(연습)';
     const btnStop=document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 중지'; btnStop.disabled=true;
@@ -289,7 +349,7 @@ function renderToday(){
     const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px';
     const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent='';
 
-    // ——— 개별 말하기(연습): 반드시 사용자가 중지해야 종료 ———
+    // 개별 말하기(연습): 반드시 사용자 '중지'로 종료
     let rec=null, recActive=false, hypAccum='';
     function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…(연습)'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기(연습)'; } }
 
@@ -300,11 +360,9 @@ function renderToday(){
           if(r.isFinal){ hypAccum += (hypAccum?' ':'') + r[0].transcript; }
         }
       }, ()=>{
-        // 자동 onend: 사용자가 중지하지 않았다면 즉시 새 인스턴스 생성하여 재시작
         if(recActive){
           try{ rec=null; setTimeout(startLineRec, 200); }catch(_){}
         } else {
-          // 사용자가 중지 → 점수 계산
           const s=scoreSentence(text,hypAccum);
           const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hypAccum);
           scoreBox.textContent=`연습 점수 ${s}%`;
@@ -324,7 +382,7 @@ function renderToday(){
     };
     btnStop.onclick=()=>{ 
       if(!rec) return;
-      recActive=false;                 // 사용자가 중지
+      recActive=false;
       try{ rec.stop(); }catch(_){}
       btnStop.disabled=true; btnStop.textContent='중지됨';
     };
@@ -357,12 +415,11 @@ function renderToday(){
   updateProgress();
 }
 
-// ===== Progress (연속 말하기 종합 점수만 반영) =====
+// ===== Progress (연속 말하기 점수만 반영) =====
 function updateProgress(){
   const day=getTodayDay(); const d=ensureDayState(day);
   const avg = (typeof d.comboScore==='number') ? d.comboScore : 0;
   document.getElementById('avgScore').textContent = avg>0 ? (avg+'%') : '—';
-  document.getElementById('progressText').textContent = `${avg}%`;
   document.getElementById('meterBar').style.width = `${avg}%`;
 
   const pass = avg>=80;
@@ -470,7 +527,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     if(lastScore!=null){
       const day=getTodayDay(); const d=ensureDayState(day);
       d.comboScore = lastScore; saveProg(prog);
-      updateProgress(); // ← 진도 게이지/텍스트는 여기서만 갱신됨
+      updateProgress();
       toast(`종합 점수 ${lastScore}% 반영 완료`);
     } else {
       toast('점수 없이 닫았습니다.');
@@ -526,7 +583,7 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 
 // ===== Boot =====
 function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
-async function initDiag(){ /* voices */ }
+async function initDiag(){ /* voices lazy */ }
 async function boot(){ initHeaderKPI(); renderToday(); renderChallenge100(); updateProgress(); }
 boot();
 </script>
