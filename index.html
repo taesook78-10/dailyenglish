@@ -16,7 +16,6 @@
     --ring:#31457a; --ring-strong:#4a63a8;
     --shadow:0 12px 40px rgba(0,0,0,.35);
     --radius:18px; --radius-sm:12px;
-    --pad:16px; --gap:10px; --gap-lg:14px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -34,30 +33,17 @@
   h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.2px}
   .badge{padding:6px 10px;border-radius:999px;background:rgba(91,140,255,.15);color:#cfe0ff;border:1px solid var(--ring);font-size:12px}
   nav{display:flex; gap:8px; margin:10px 0 16px; flex-wrap:wrap; align-items:center}
-  .tab{padding:10px 14px;border-radius:12px;background:#101733;border:1px solid var(--ring);cursor:pointer;color:#a7b3d6; transition:filter .15s}
+  .tab{padding:10px 14px;border-radius:12px;background:#101733;border:1px solid var(--ring);cursor:pointer;color:#a7b3d6}
   .tab.active{background:#141f45;color:var(--ink);border-color:#3a5296}
-  .tab:focus-visible{outline:2px solid var(--ring-strong); outline-offset:2px}
-  select{
-    appearance:none;background:#101733;border:1px solid var(--ring);color:#e8eefc;
-    padding:10px 12px;border-radius:10px;min-height:44px;
-  }
+  select{appearance:none;background:#101733;border:1px solid var(--ring);color:#e8eefc;padding:10px 12px;border-radius:10px;min-height:44px}
   .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
   @media (max-width:960px){.grid{grid-template-columns:1fr;}}
-  .card{
-    background:linear-gradient(180deg,#111a34,#0f1731);
-    border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow)
-  }
+  .card{background:linear-gradient(180deg,#111a34,#0f1731);border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow)}
   .card .hd{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 18px 0}
   .card .body{padding:14px 18px 20px}
   .title{font-size:26px;margin-top:4px;font-weight:900;letter-spacing:.3px}
   .subtitle{font-size:13px;color:var(--muted)}
-  .line{
-    border:1px solid var(--ring);
-    border-radius:16px;
-    padding:14px;
-    margin:12px 0;
-    background:#0f1731
-  }
+  .line{border:1px solid var(--ring);border-radius:16px;padding:14px;margin:12px 0;background:#0f1731}
   .line p{margin:0 0 8px;font-size:18px;line-height:1.5}
   .line p.ko{margin:0 0 10px; font-size:15.5px; line-height:1.6; color:#cbd4f5}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -74,63 +60,34 @@
   .btn.warn{background:#3a2a0e;border-color:#9f6b18}
   .btn.ghost{background:transparent;border-color:#2b3f7a}
   .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
-  .btn:focus-visible{outline:2px solid var(--ring-strong); outline-offset:2px; box-shadow:0 0 0 4px rgba(91,140,255,.18)}
 
-  .chip{
-    display:inline-flex; align-items:center; gap:8px;
-    padding:8px 12px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px
-  }
-  .chip::before{
-    content:''; width:8px; height:8px; border-radius:50%;
-    background:linear-gradient(180deg,#a7baff,#5b8cff); box-shadow:0 0 0 2px rgba(91,140,255,.15);
-  }
+  .chip{display:inline-flex; align-items:center; gap:8px; padding:8px 12px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px}
+  .chip::before{content:''; width:8px; height:8px; border-radius:50%; background:linear-gradient(180deg,#a7baff,#5b8cff); box-shadow:0 0 0 2px rgba(91,140,255,.15);}
   .score{font-weight:900}
 
   .meter{height:12px;background:#0e1330;border-radius:999px;border:1px solid var(--ring);overflow:hidden}
   .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
 
   .kpi{display:flex;gap:8px;flex-wrap:wrap}
-
-  .calendar{
-    display:grid;grid-template-columns:repeat(10,1fr);gap:8px
-  }
-  .day{
-    aspect-ratio:1/1;border:1px solid #2d3d72;border-radius:12px;
-    display:flex;align-items:center;justify-content:center;
-    background:#0e1430;color:#c9d4ff;font-weight:700; font-size:14px;
-    transition:filter .15s, transform .06s;
-  }
-  .day:hover{filter:brightness(1.06)}
-  .day:active{transform:translateY(1px)}
-  .day.done{
-    border-color:#4a63a8;background:radial-gradient(100% 100% at 30% 20%,rgba(33,211,155,.25),transparent 60%)
-  }
-  @media (max-width:520px){
-    .calendar{grid-template-columns:repeat(7,1fr)}
-    .day{font-size:13px}
-    .line p{font-size:16px}
-    .title{font-size:22px}
-  }
+  .calendar{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
+  .day{aspect-ratio:1/1;border:1px solid #2d3d72;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0e1430;color:#c9d4ff;font-weight:700; font-size:14px}
+  @media (max-width:520px){ .calendar{grid-template-columns:repeat(7,1fr)} .day{font-size:13px} .line p{font-size:16px} .title{font-size:22px}}
 
   .toast{position:fixed;inset:auto 0 18px 0;display:flex;justify-content:center;pointer-events:none}
   .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
 
   .small{font-size:12px;color:#a7b3d6}
-  .hint{
-    font-size:12.5px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;
-    padding:10px 12px;border-radius:10px
-  }
+  .hint{font-size:12.5px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:10px 12px;border-radius:10px}
 
   /* 연속 말하기 패널 */
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:9999;}
-  .practice .box{width:min(720px,94vw); max-height:92vh; overflow:auto; background:#101733; border:1px solid var(--ring); border-radius:16px; padding:16px 16px 14px; box-shadow:var(--shadow);}
+  .practice .box{width:min(720px,94vw); max-height:92vh; overflow:auto; background:#101733; border:1px solid var(--ring); border-radius:16px; padding:16px; box-shadow:var(--shadow);}
   .practice .box h3{margin:0 0 12px; font-size:18px;}
   .practice .ref{font-size:14.5px; color:#cfe0ff; margin:6px 0 12px; white-space:pre-wrap; line-height:1.6}
   .practice .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px}
   .practice .result{margin-top:12px; padding:12px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
   .feedback{display:block; font-size:12.5px; color:#cfe0ff; opacity:.95}
 
-  /* 숨김 배지 */
   #diagSupport, #diagVoices { display:none !important; }
   </style>
 </head>
@@ -168,6 +125,7 @@
             <div class="title" id="dayTitle">—</div>
           </div>
           <div class="kpi">
+            <!-- “종합 점수” → “점수” 로 변경 -->
             <div class="chip">점수: <span class="score" id="avgScore">—</span></div>
           </div>
         </div>
@@ -325,12 +283,12 @@ function ensureDayState(day){
 
 // ===== Render Today =====
 function renderToday(){
-  const day=getTodayDay(); const data=ensureDayState(day); const title=TITLES[day-1];
+  const day=getTodayDay(); ensureDayState(day); const title=TITLES[day-1];
   const pairs=randomLinesBilingual(title);
   elDayNum.textContent=day; elTitle.textContent=title; elLines.innerHTML='';
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const sttSupported=!!SR;
 
-  pairs.forEach((pair,i)=>{
+  pairs.forEach((pair)=>{
     const text = pair.en;
     const line=document.createElement('div'); line.className='line';
 
@@ -445,7 +403,7 @@ function markDone(day,avg){
   renderChallenge100(); renderHistory();
 }
 
-// ===== 연속 말하기 (닫을 때 마지막 점수만 반영) =====
+// ===== 3문장 연속 말하기: 반드시 ‘중지’ 눌러야 멈춤 =====
 function concatenateLines(lines){ return lines.join(' '); }
 function practiceReciteOneShot_final(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -472,7 +430,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
       <span class="small">여러 번 시도해도 됩니다. <b>닫기</b>를 누른 시점의 점수가 반영됩니다.</span>
     </div>
     <div class="result" id="resultBox" style="display:none">
-      <div>종합 점수: <b id="sumScore">—</b></div>
+      <div>점수: <b id="sumScore">—</b></div>
       <div class="feedback" id="sumFb"></div>
       <div style="margin-top:8px"><button class="btn" id="btnClosePanel">닫기</button></div>
     </div>
@@ -485,12 +443,30 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   const sumScore = box.querySelector('#sumScore');
   const sumFb    = box.querySelector('#sumFb');
 
-  let rec=null, finalText='', lastScore=null, lastFb='', canStart=true;
+  let rec=null, finalText='', lastScore=null, lastFb='';
+  let recActive=false;   // ← 사용자가 ‘중지’ 누르기 전까지 true
+  let canStart=true;
 
   function resetStartUI(){ btnStart.classList.remove('rec'); btnStart.textContent='● 말하기 시작'; btnStart.disabled=false; }
+  function startRecognizer(){
+    rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
+    if(rec){ try{ rec.start(); }catch(_){ canStart=true; resetStartUI(); btnStop.disabled=true; toast('마이크 시작에 실패했습니다. 다시 시도해 주세요.'); } }
+    else { canStart=true; resetStartUI(); btnStop.disabled=true; }
+  }
 
-  function onResult(e){ for (let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) finalText += (finalText?' ':'') + r[0].transcript; } }
+  function onResult(e){
+    for (let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i];
+      if(r.isFinal) finalText += (finalText?' ':'') + r[0].transcript;
+    }
+  }
   function onEnd(){
+    // 침묵/네트워크 등으로 자동 종료된 경우 → 사용자가 중지하지 않았다면 즉시 재시작
+    if(recActive){
+      try{ rec=null; setTimeout(startRecognizer, 200); }catch(_){}
+      return;
+    }
+    // 사용자가 ‘중지’ 눌러 종료된 경우만 채점
     const refAll = concatenateLines(lines);
     const sc = scoreSentence(refAll, finalText);
     const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
@@ -500,35 +476,37 @@ function practiceReciteOneShot_final(lines, triggerBtn){
     sumFb.textContent = lastFb; resultBox.style.display = '';
 
     btnStop.disabled = true; btnStop.textContent = '중지됨';
-    resetStartUI(); rec=null; finalText=''; setTimeout(()=>{ canStart=true; }, 200);
+    resetStartUI(); rec=null; setTimeout(()=>{ canStart=true; }, 200);
   }
 
   btnStart.onclick = ()=>{
-    if(!canStart || rec) return;
+    if(!canStart || recActive) return;
     canStart=false; finalText='';
+    recActive=true;
     if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
     btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
     btnStop.disabled=false; btnStop.textContent='■ 중지';
-
-    setTimeout(()=>{
-      rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
-      if(rec){ try{ rec.start(); }catch(_){ canStart=true; resetStartUI(); btnStop.disabled=true; toast('마이크 시작에 실패했습니다. 다시 시도해 주세요.'); } }
-      else { canStart=true; resetStartUI(); btnStop.disabled=true; }
-      toast('한 번에 3문장을 말해 보세요…');
-    }, 150);
+    setTimeout(startRecognizer, 150);
+    toast('한 번에 3문장을 말해 보세요…');
   };
 
-  btnStop.onclick = ()=>{ if(rec){ try{ rec.stop(); }catch(_){ } } btnStop.disabled = true; btnStop.textContent = '중지됨'; };
+  btnStop.onclick = ()=>{
+    if(!recActive) return;
+    recActive=false;                 // ← 반드시 사용자가 눌러야 종료 플로우 진입
+    if(rec){ try{ rec.stop(); }catch(_){ } }
+    btnStop.disabled = true; btnStop.textContent = '중지됨';
+  };
 
   box.querySelector('#btnClosePanel').onclick = ()=>{
-    try{ if(rec){ rec.abort(); } }catch(_){}
+    // 닫기 시 진행 중이면 강제 중단(채점하지 않음)
+    try{ if(recActive && rec){ recActive=false; rec.abort(); } }catch(_){}
     document.body.removeChild(wrap);
     restoreTrigger();
     if(lastScore!=null){
       const day=getTodayDay(); const d=ensureDayState(day);
       d.comboScore = lastScore; saveProg(prog);
       updateProgress();
-      toast(`종합 점수 ${lastScore}% 반영 완료`);
+      toast(`점수 ${lastScore}% 반영 완료`);
     } else {
       toast('점수 없이 닫았습니다.');
     }
@@ -583,7 +561,6 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 
 // ===== Boot =====
 function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
-async function initDiag(){ /* voices lazy */ }
 async function boot(){ initHeaderKPI(); renderToday(); renderChallenge100(); updateProgress(); }
 boot();
 </script>
