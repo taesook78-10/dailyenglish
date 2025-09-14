@@ -122,7 +122,6 @@
             <div class="subtitle">오늘의 제목 (Day <span id="dayNum">1</span>)</div>
             <div class="title" id="dayTitle">—</div>
           </div>
-          <!-- 점수 칩은 이 카드에서 제거(요청에 따라 오른쪽 ‘오늘의 목표’ 카드 헤더로 이동) -->
         </div>
         <div class="body" id="lines"></div>
       </div>
@@ -130,7 +129,6 @@
       <div class="card">
         <div class="hd">
           <h2>오늘의 목표</h2>
-          <!-- 오른쪽에 '80점 이상 성공' 먼저, 그 오른쪽에 점수 칩 배치 -->
           <div class="kpi">
             <div class="chip">80점 이상 성공</div>
             <div class="chip">점수: <span class="score" id="avgScore">—</span></div>
@@ -191,7 +189,6 @@ function computeDayFromStart(){
   return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1));
 }
 function getTodayDay(){
-  // _currentDay는 자동으로 새날에 업데이트됨(아래 autoDayRollover 참고)
   const cur=prog._currentDay || computeDayFromStart();
   const d=Math.max(1,Math.min(100,cur));
   if(prog._currentDay!==d){ prog._currentDay=d; saveProg(prog); }
@@ -212,35 +209,275 @@ const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeti
   'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
 ];
 
-/* ====== Fixed 21-line bank per topic (EN/KR) ======
-   - 템플릿이지만 "고정 21문장"으로 취급됩니다(랜덤 X).
-   - title을 소문자로 끼워 넣어 자연스러운 회화 문장 세트 21개.
+/* ====== TOPIC BANKS ======
+   - 각 주제는 (1) 완전 커스텀 21문장 배열 또는
+                 (2) category 키워드(예: 'coffee','airport',...) 로 지정 가능
+   - 아래 기본 세팅은 100개 전체 주제를 카테고리로 분류해 둠.
+   - 특정 주제를 완전 커스텀하고 싶으면 해당 키에 21문장 배열을 직접 넣으면 됩니다.
 */
-function bank21(title){
-  const t = title.toLowerCase();
+const TOPIC_BANKS = {
+  // 일상/이동
+  'Morning Routine': 'routine',
+  'Commuting': 'commute',
+  // 커피 관련
+  'Coffee Break': 'coffee',
+  'Morning Coffee': 'coffee',
+  'Coffee Chat': 'coffee',
+  // 업무/회의/문서
+  'Emails': 'emails',
+  'Team Meeting': 'meeting',
+  'Project Update': 'work',
+  'Note Taking': 'study',
+  'Presentation Prep': 'presentation',
+  'Public Speaking': 'public_speaking',
+  'Mentor Advice': 'mentoring',
+  'Goal Setting': 'planning',
+  'Habit Tracking': 'habit',
+  'Budgeting': 'budget',
+  // 식사/쇼핑/헬스
+  'Lunch Out': 'dining',
+  'Groceries': 'groceries',
+  'Gym': 'gym',
+  // 저녁/여가
+  'Evening Walk': 'walk',
+  'Streaming Show': 'streaming',
+  'Weekend Plan': 'weekend',
+  'Laundry': 'homecare',
+  'Room Cleaning': 'homecare',
+  'Errands': 'errands',
+  'Bank Visit': 'bank',
+  'Pharmacy': 'pharmacy',
+  'Salon': 'salon',
+  'Car Wash': 'car_wash',
+  'Pet Care': 'pet',
+  'Cooking Dinner': 'cooking',
+  'Takeout': 'takeout',
+  'Birthday Party': 'party',
+  'Small Talk': 'smalltalk',
+  'Weather Chat': 'weather_chat',
+  'Sports Talk': 'sports',
+  'News Catch-up': 'news',
+  'Book Club': 'book',
+  'Movie Night': 'movie',
+  'Concert': 'concert',
+  // 학습/도서관
+  'Study Session': 'study',
+  'Library Visit': 'library',
+  // 온라인/쇼핑/고객
+  'Online Shopping': 'shopping',
+  'Return/Refund': 'refund',
+  'Customer Service': 'customer_service',
+  // 여행
+  'Travel Plan': 'travel',
+  'Packing': 'packing',
+  'Airport': 'airport',
+  'Hotel Check-in': 'hotel',
+  'City Tour': 'tour',
+  'Photo Walk': 'photo',
+  'Museum': 'museum',
+  'Park Picnic': 'picnic',
+  'Beach Day': 'beach',
+  'Hiking': 'hiking',
+  // 날씨
+  'Rainy Day': 'rain',
+  'Snow Day': 'snow',
+  'Heat Wave': 'heat',
+  'Cold Snap': 'cold',
+  // 건강
+  'Sick Day': 'sick',
+  'Clinic Visit': 'clinic',
+  'Dentist Visit': 'dentist',
+  // 업무 페이스
+  'Back to Work': 'work',
+  'Overtime': 'overtime',
+  'Deadline Push': 'deadline',
+  'Celebration': 'celebration',
+  'Thank-you Notes': 'thanks',
+  'Apology': 'apology',
+  // 약속/시간
+  'Making Plans': 'plans',
+  'Canceling Plans': 'cancel',
+  'Running Late': 'late',
+  'Time Management': 'timemanage',
+  // 하루 리듬
+  'Afternoon Slump': 'slump',
+  'Power Nap': 'nap',
+  'Evening Class': 'class',
+  'Night Drive': 'drive',
+  'Late Snack': 'snack',
+  // 소통
+  'Phone Call': 'phone',
+  'Video Call': 'video',
+  'Texting': 'text',
+  'Social Media': 'social',
+  // 마음/기록/콘텐츠
+  'Digital Detox': 'detox',
+  'Mindfulness': 'mindfulness',
+  'Journaling': 'journal',
+  'Reading': 'reading',
+  'Music Playlist': 'music',
+  'Podcast': 'podcast',
+  'Language Practice': 'language',
+  // 커리어
+  'Networking': 'network',
+  'Interview Prep': 'interview',
+  'Part-time Job': 'parttime',
+  // 사이드/제작
+  'Side Project': 'side',
+  'Coding Session': 'coding',
+  'Design Draft': 'design',
+  'Feedback Round': 'feedback',
+  'Revision': 'revision',
+  'Final Review': 'final_review',
+  'Presentation Day': 'presentation_day',
+  // 휴식/가족/친구/데이트
+  'Rest Day': 'rest',
+  'Family Dinner': 'family',
+  'Friends Hangout': 'friends',
+  'Date Night': 'date',
+  'Neighborhood Walk': 'walk',
+  'Farmer’s Market': 'market',
+  // 집/환경/공동체
+  'Car Maintenance': 'car_maint',
+  'House Plants': 'plants',
+  'Recycling': 'recycling',
+  'Donation': 'donation',
+  'Volunteering': 'volunteer',
+  'Community Event': 'community',
+  'Holiday Prep': 'holiday'
+};
+
+/* ====== 카테고리별 문장 템플릿 ======
+   - 각 카테고리에서 21문장을 정확히 반환 (en/ko 페어)
+   - 커피/공항 등은 전용 콘텐츠, 기타는 범용 "주제 맞춤 템플릿"
+*/
+function lines_coffee(){
+  return [
+    {en:"I drink a cup of coffee every morning.", ko:"나는 매일 아침 커피를 한 잔 마셔요."},
+    {en:"I tried a new coffee shop today.", ko:"오늘 새로운 커피숍에 가봤어요."},
+    {en:"I like iced coffee in the summer.", ko:"여름에는 아이스커피를 좋아해요."},
+    {en:"Too much coffee makes me nervous.", ko:"커피를 너무 많이 마시면 신경이 예민해져요."},
+    {en:"I ordered a latte with no sugar.", ko:"설탕 없이 라테를 주문했어요."},
+    {en:"The aroma of fresh coffee woke me up.", ko:"갓 내린 커피 향이 잠을 깨워줬어요."},
+    {en:"I ground the beans right before brewing.", ko:"추출하기 직전에 원두를 갈았어요."},
+    {en:"I’m learning to make better pour-over.", ko:"더 맛있는 푸어오버를 배우고 있어요."},
+    {en:"I added a splash of milk to my coffee.", ko:"커피에 우유를 약간 넣었어요."},
+    {en:"We chatted over coffee after lunch.", ko:"점심 후 커피 마시며 수다를 떨었어요."},
+    {en:"I switched to decaf in the evening.", ko:"저녁에는 디카페인으로 바꿨어요."},
+    {en:"The barista recommended a seasonal blend.", ko:"바리스타가 시즌 블렌드를 추천했어요."},
+    {en:"I tried a single-origin espresso shot.", ko:"싱글 오리진 에스프레소 샷을 마셔봤어요."},
+    {en:"I compared light and dark roasts.", ko:"라이트 로스트와 다크 로스트를 비교해 봤어요."},
+    {en:"I cleaned my coffee grinder today.", ko:"오늘 커피 그라인더를 청소했어요."},
+    {en:"I set a budget for my coffee spending.", ko:"커피 지출 예산을 정했어요."},
+    {en:"I skipped coffee to sleep better tonight.", ko:"오늘 밤 숙면을 위해 커피를 건너뛰었어요."},
+    {en:"I paired coffee with a small dessert.", ko:"커피와 작은 디저트를 곁들였어요."},
+    {en:"The café was cozy and quiet.", ko:"카페가 아늑하고 조용했어요."},
+    {en:"I learned a new brewing ratio.", ko:"새로운 추출 비율을 배웠어요."},
+    {en:"I’m glad my coffee turned out smooth.", ko:"커피가 부드럽게 잘 나와서 만족했어요."},
+  ];
+}
+function lines_airport(){
+  return [
+    {en:"I checked in online before going to the airport.", ko:"공항에 가기 전에 온라인 체크인을 했어요."},
+    {en:"I arrived early to avoid long lines.", ko:"긴 줄을 피하려고 일찍 도착했어요."},
+    {en:"Security screening was quick today.", ko:"오늘 보안 검색이 빨랐어요."},
+    {en:"I printed my boarding pass just in case.", ko:"혹시 몰라 탑승권을 출력했어요."},
+    {en:"I double-checked my gate and seat number.", ko:"게이트와 좌석 번호를 다시 확인했어요."},
+    {en:"I put my liquids in a clear bag.", ko:"액체류를 투명한 봉투에 넣었어요."},
+    {en:"I kept my passport in an easy-to-reach pocket.", ko:"여권을 꺼내기 쉬운 주머니에 넣어두었어요."},
+    {en:"I grabbed a quick snack before boarding.", ko:"탑승 전에 간단히 간식을 먹었어요."},
+    {en:"Boarding started right on time.", ko:"탑승이 제시간에 시작됐어요."},
+    {en:"I listened for announcements near the gate.", ko:"게이트 근처에서 안내 방송을 들었어요."},
+    {en:"I used a carry-on to travel light.", ko:"가볍게 들고 탈 수화물만 가져갔어요."},
+    {en:"I kept my phone charged for the e-ticket.", ko:"전자 탑승권을 위해 휴대폰을 충전해 두었어요."},
+    {en:"I checked the baggage weight limit.", ko:"수하물 무게 제한을 확인했어요."},
+    {en:"I asked for a window seat politely.", ko:"창가 자리를 정중히 부탁했어요."},
+    {en:"I watched the planes take off and land.", ko:"비행기 이륙과 착륙을 구경했어요."},
+    {en:"I followed the signs to immigration.", ko:"표지판을 따라 출입국 심사로 갔어요."},
+    {en:"I filled out the arrival form carefully.", ko:"입국 신고서를 꼼꼼히 작성했어요."},
+    {en:"I kept my valuables in my personal bag.", ko:"귀중품은 개인 가방에 보관했어요."},
+    {en:"I checked the airport map to find my gate.", ko:"공항 지도를 보고 게이트를 찾았어요."},
+    {en:"I stretched my legs before the long flight.", ko:"긴 비행 전 다리를 쭉 폈어요."},
+    {en:"I’m glad the flight departed smoothly.", ko:"비행기가 순조롭게 출발해서 다행이에요."},
+  ];
+}
+function lines_hotel(){
+  return [
+    {en:"I confirmed my reservation before the trip.", ko:"여행 전에 예약을 확인했어요."},
+    {en:"I asked for early check-in politely.", ko:"정중하게 얼리 체크인을 요청했어요."},
+    {en:"I showed my ID and booking number at the desk.", ko:"데스크에서 신분증과 예약번호를 보여줬어요."},
+    {en:"I requested a quiet room on a higher floor.", ko:"층고가 높은 조용한 방을 부탁했어요."},
+    {en:"I checked the room for cleanliness.", ko:"객실 청결 상태를 확인했어요."},
+    {en:"I tested the key card and safe.", ko:"키 카드와 금고를 점검했어요."},
+    {en:"I asked about breakfast hours.", ko:"아침 식사 시간을 물어봤어요."},
+    {en:"I set the air conditioner to a comfortable level.", ko:"에어컨을 편안한 온도로 설정했어요."},
+    {en:"I used the luggage rack to keep things tidy.", ko:"짐 정리를 위해 러기지랙을 사용했어요."},
+    {en:"I called the front desk for extra towels.", ko:"수건을 더 달라고 프런트에 전화했어요."},
+    {en:"I planned tomorrow’s route with the hotel map.", ko:"호텔 지도로 내일 동선을 계획했어요."},
+    {en:"I charged my devices near the desk.", ko:"책상 근처에서 기기를 충전했어요."},
+    {en:"I put the ‘Do Not Disturb’ sign on the door.", ko:"문에 '객실 정중' 표지를 걸었어요."},
+    {en:"I checked out the gym and pool hours.", ko:"헬스장과 수영장 운영 시간을 확인했어요."},
+    {en:"I kept my passport in the room safe.", ko:"여권을 객실 금고에 보관했어요."},
+    {en:"I requested a late checkout if possible.", ko:"가능하면 레이트 체크아웃을 요청했어요."},
+    {en:"I thanked the staff for their help.", ko:"직원들의 도움에 감사 인사를 했어요."},
+    {en:"I left a small tip for housekeeping.", ko:"하우스키핑을 위해 작은 팁을 남겼어요."},
+    {en:"I checked out smoothly at the front desk.", ko:"프런트에서 수월하게 체크아웃했어요."},
+    {en:"I saved the hotel address on my phone.", ko:"호텔 주소를 휴대폰에 저장해 두었어요."},
+    {en:"I’m happy the room met my needs.", ko:"객실이 기대에 맞아서 만족했어요."},
+  ];
+}
+
+/* ====== 범용/다수 카테고리 템플릿 ======
+   - title(주제명)을 자연스럽게 끼워 넣되, 실제 상황 맥락으로 21문장 구성
+*/
+function lines_generic(title){
+  const t = title;
   return [
     {en:`I spent some time on ${t} today.`, ko:`오늘 ${t}에 시간을 좀 썼어요.`},
-    {en:`I tried to keep ${t} simple.`, ko:`${t}는 최대한 심플하게 해봤어요.`},
+    {en:`I tried to keep ${t} simple and practical.`, ko:`${t}는 실용적으로, 간단히 해봤어요.`},
     {en:`Honestly, ${t} took longer than I expected.`, ko:`솔직히 ${t}가 생각보다 오래 걸렸어요.`},
-    {en:`I finally got around to ${t}.`, ko:`드디어 ${t}를 하게 됐어요.`},
-    {en:`I checked in on ${t} after work.`, ko:`퇴근 후 ${t}를 잠깐 살펴봤어요.`},
-    {en:`Nothing fancy with ${t}—just the basics.`, ko:`${t}는 거창하게 안 하고 기본만 했어요.`},
-    {en:`I made steady progress on ${t}.`, ko:`${t}는 꾸준히 진전이 있었어요.`},
-    {en:`I kept ${t} practical, not overthinking it.`, ko:`${t}는 실용적으로, 과하게 고민하진 않았어요.`},
-    {en:`We talked about ${t} for a bit.`, ko:`${t}에 대해 잠깐 얘기했어요.`},
-    {en:`I’ll try to be more consistent with ${t}.`, ko:`${t}를 더 꾸준히 해볼게요.`},
-    {en:`Next time, I’ll plan ${t} ahead.`, ko:`다음엔 ${t}를 미리 계획해볼게요.`},
-    {en:`Small wins on ${t} still count.`, ko:`${t}에서 작은 성취도 의미 있어요.`},
-    {en:`Slow and steady works for ${t}.`, ko:`${t}는 천천히 꾸준히가 맞는 것 같아요.`},
-    {en:`I had a quick update on ${t}.`, ko:`${t} 관련해 간단히 업데이트했어요.`},
-    {en:`I kept ${t} light but useful.`, ko:`${t}는 가볍게 했지만 유익했어요.`},
-    {en:`I ran into a small hiccup with ${t}.`, ko:`${t}에서 작은 문제가 있었어요.`},
-    {en:`I sorted out a few details for ${t}.`, ko:`${t}의 몇 가지 디테일을 정리했어요.`},
-    {en:`${t} wasn’t perfect, but it moved forward.`, ko:`${t}가 완벽하진 않았지만 진전됐어요.`},
-    {en:`I wrapped up the basics of ${t}.`, ko:`${t}의 기본은 마무리했어요.`},
-    {en:`I set a simple goal for ${t} this week.`, ko:`이번 주 ${t}에 단순한 목표를 세웠어요.`},
-    {en:`I’m glad ${t} is finally on track.`, ko:`${t}가 드디어 궤도에 올라서 다행이에요.`},
+    {en:`I finally made progress with ${t}.`, ko:`드디어 ${t}에서 진전이 있었어요.`},
+    {en:`I set one clear goal for ${t}.`, ko:`${t}를 위해 명확한 목표 하나를 정했어요.`},
+    {en:`I checked a few details related to ${t}.`, ko:`${t}와 관련된 몇 가지 디테일을 점검했어요.`},
+    {en:`I talked about ${t} with a friend briefly.`, ko:`${t}에 대해 친구와 잠깐 이야기했어요.`},
+    {en:`I learned a small tip that helps with ${t}.`, ko:`${t}에 도움이 되는 작은 팁을 배웠어요.`},
+    {en:`I wrote down notes to improve ${t} next time.`, ko:`다음에 ${t}를 더 잘하려고 메모를 남겼어요.`},
+    {en:`I kept my expectations realistic for ${t}.`, ko:`${t}에 대한 기대치를 현실적으로 잡았어요.`},
+    {en:`I planned a simple routine around ${t}.`, ko:`${t}를 위한 간단한 루틴을 세웠어요.`},
+    {en:`I found a tool that makes ${t} easier.`, ko:`${t}를 더 쉽게 하는 도구를 찾았어요.`},
+    {en:`I practiced a few times to get used to ${t}.`, ko:`${t}에 익숙해지려고 몇 번 연습했어요.`},
+    {en:`I checked my progress on ${t}.`, ko:`${t} 진행 상황을 확인했어요.`},
+    {en:`I fixed a small issue that blocked ${t}.`, ko:`${t}를 막던 작은 문제를 해결했어요.`},
+    {en:`I adjusted my schedule to fit ${t}.`, ko:`${t}에 맞게 일정을 조정했어요.`},
+    {en:`I asked for feedback about ${t}.`, ko:`${t}에 대한 피드백을 요청했어요.`},
+    {en:`I kept ${t} consistent but flexible.`, ko:`${t}를 꾸준히 하되 유연하게 했어요.`},
+    {en:`I wrapped up the basics of ${t}.`, ko:`${t}의 기본을 마무리했어요.`},
+    {en:`I set a reminder to revisit ${t} soon.`, ko:`곧 ${t}를 다시 보려고 알림을 설정했어요.`},
+    {en:`I’m glad ${t} is moving in the right direction.`, ko:`${t}가 좋은 방향으로 가서 다행이에요.`},
   ];
+}
+
+/* ====== 카테고리 라우팅 ====== */
+function build21ByCategory(cat, title){
+  switch(cat){
+    case 'coffee': return lines_coffee();
+    case 'airport': return lines_airport();
+    case 'hotel': return lines_hotel();
+    // 아래는 간결화를 위해 대부분 generic에 title 주입.
+    // 필요 시 같은 방식으로 카테고리 전용 세트를 추가해 주세요.
+    default: return lines_generic(title);
+  }
+}
+
+/* ====== bank21(title) → TOPIC_BANKS 사용 ====== */
+function bank21(title){
+  const override = TOPIC_BANKS[title];
+  if (Array.isArray(override) && override.length === 21) {
+    return override; // 완전 커스텀 21문장
+  }
+  // category 문자열이면 해당 전용/범용 세트 생성
+  const cat = (typeof override === 'string' && override) ? override : 'generic';
+  return build21ByCategory(cat, title);
 }
 
 /* ====== Per-day state ====== */
@@ -369,7 +606,7 @@ function renderToday(){
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(점수 반영)';
-  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
+  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식을 지원하지 않습니다.'; }
   btnRecAll.onclick=()=> practiceReciteOneShot_final(lines.map(x=>x.en), btnRecAll);
   allRow.appendChild(btnRecAll);
 
@@ -378,7 +615,7 @@ function renderToday(){
   updateProgress();
 }
 
-/* ====== Progress (연속 말하기 점수만 반영) ====== */
+/* ====== Progress ====== */
 function updateProgress(){
   const day=getTodayDay(); const d=ensureDayState(day);
   const avg = (typeof d.comboScore==='number') ? d.comboScore : 0;
@@ -407,7 +644,7 @@ function markDone(day,avg){
   renderChallenge100(); renderHistory();
 }
 
-/* ====== 3문장 연속 말하기: ‘중지’ 누르기 전 자동재시작 ====== */
+/* ====== 3문장 연속 말하기(점수 반영) ====== */
 function concatenateLines(lines){ return lines.join(' '); }
 function practiceReciteOneShot_final(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -448,7 +685,7 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   const sumFb    = box.querySelector('#sumFb');
 
   let rec=null, finalText='', lastScore=null, lastFb='';
-  let recActive=false;   // 사용자가 ‘중지’ 누르기 전 true
+  let recActive=false;
   let canStart=true;
 
   function resetStartUI(){ btnStart.classList.remove('rec'); btnStart.textContent='● 말하기 시작'; btnStart.disabled=false; }
@@ -491,8 +728,8 @@ function practiceReciteOneShot_final(lines, triggerBtn){
 
   btnStop.onclick = ()=>{
     if(!recActive) return;
-    recActive=false;                 // 사용자가 눌러야 종료
-    if(rec){ try{ rec.stop(); }catch(_){ } }
+    recActive=false;
+    if(rec){ try{ rec.stop(); }catch(_){} }
     btnStop.disabled = true; btnStop.textContent = '중지됨';
   };
 
@@ -549,7 +786,6 @@ function renderHistory(){
 /* ====== Shortcuts ====== */
 btnRetry.onclick=()=>{
   const day=getTodayDay(); const k='Day'+day; const st=ensureDayState(day);
-  // 점수/완료 리셋 + 3문장 다음 묶음으로 이동
   st.comboScore=null; st.done=false;
   st.bankOffset = ((st.bankOffset||0) + 3) % 21;
   saveProg(prog);
@@ -563,16 +799,12 @@ btnReset.onclick=()=>{ if(!confirm('정말 전체 데이터를 초기화할까�
   renderToday(); renderChallenge100(); renderHistory(); updateProgress(); toast('🧹 모든 데이터가 초기화됐어요.');
 };
 
-/* ====== Auto Day Rollover (KST) ======
-   - 한국시간 자정이 지나면 자동으로 Day 업데이트 & 화면 갱신
-*/
+/* ====== Auto Day Rollover (KST) ====== */
 function autoDayRolloverTick(){
   const nowKey = todayKey();
   if(prog._lastDate !== nowKey){
     prog._lastDate = nowKey;
-    // 시작일 기준 Day 자동 계산
     prog._currentDay = computeDayFromStart();
-    // 새 날에는 해당 Day 상태 초기화(문장 뭉치 처음부터 보여주도록 bankOffset=0)
     const k='Day'+prog._currentDay;
     if(!prog[k]) prog[k]={ comboScore:null, done:false, bankOffset:0 };
     saveProg(prog);
@@ -580,8 +812,7 @@ function autoDayRolloverTick(){
     toast('📅 새로운 날이 시작되어 주제를 바꿨어요!');
   }
 }
-setInterval(autoDayRolloverTick, 60*1000); // 1분마다 체크
-// 앱 진입 직후에도 한번 확인
+setInterval(autoDayRolloverTick, 60*1000);
 autoDayRolloverTick();
 
 /* ====== PWA ====== */
@@ -589,7 +820,6 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator
 
 /* ====== Boot ====== */
 function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
-function updateHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
 function boot(){ initHeaderKPI(); renderToday(); renderChallenge100(); updateProgress(); }
 boot();
 </script>
