@@ -2,41 +2,6 @@
 <html lang="ko">
 
 <head>
-  <!-- 1) 주제 데이터 파일: 내가 만든 topics.js (TOPICS 배열 포함) -->
-<script src="./topics.js?v=20250914"></script>
-<script> …shim… </script>
-
-<!-- 2) 호환 셈(shim): TOPICS → 기존 코드가 기대하는 TITLES/TOPIC_BANKS로 변환 -->
-<script>
-(function(){
-  if (!Array.isArray(window.TOPICS)) {
-    console.error("[topics] window.TOPICS가 없습니다. topics.js를 먼저 로드했는지 확인하세요.");
-    return;
-  }
-  // 기존 코드 호환: 제목 배열
-  window.TITLES = window.TOPICS.map(t => t.topic);
-
-  // 기존 코드 호환: 주제 → 21문장 [{en,ko}] 맵
-  const banks = {};
-  for (const item of window.TOPICS) {
-    const arr = Array.isArray(item.sentences) ? item.sentences : [];
-    // 문자열만 있는 경우 {en: "...", ko:""}로 포장
-    let mapped = arr.map(s => (typeof s === "string") ? ({en:String(s), ko:""}) : ({
-      en: (s && s.en) ? String(s.en) : "",
-      ko: (s && s.ko) ? String(s.ko) : ""
-    }));
-    // 21개로 맞추기 (초과시 자르고, 부족시 플레이스홀더로 채움)
-    mapped = mapped.slice(0, 21);
-    while (mapped.length < 21) {
-      const i = mapped.length + 1;
-      mapped.push({ en:`Placeholder sentence ${i} for ${item.topic}.`, ko:"" });
-    }
-    banks[item.topic] = mapped;
-  }
-  window.TOPIC_BANKS = banks;
-})();
-</script>
-
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Daily 3 Lines </title>
@@ -916,25 +881,5 @@ const TOPICS = [
 
  
 </script>
-  <script>
-/* 기존 bank21는 템플릿 문장 생성기.
-   아래에서는 기존 구현을 백업해 두고, 외부 TOPIC_BANKS가 있으면 그걸 우선 사용하도록 재정의합니다. */
-(function(){
-  if (typeof window.bank21 === "function") {
-    window._genericBank21 = window.bank21; // 백업
-  }
-  window.bank21 = function(title){
-    try{
-      const bankMap = window.TOPIC_BANKS || {};
-      const arr = bankMap[title];
-      if (Array.isArray(arr) && arr.length === 21) return arr;      // ✅ 외부 주제 뱅크 우선
-    }catch(e){ /* ignore */ }
-    return (typeof window._genericBank21 === "function")
-      ? window._genericBank21(title)                                // ⬅️ 없으면 기존 템플릿 문장
-      : [];                                                          // 최후의 안전망
-  };
-})();
-</script>
-<script> …bank21 override… </script>
 </body>
 </html>
