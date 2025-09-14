@@ -1,337 +1,161 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <!--
-    ✅ 오늘의 영어 학습 — 최종 index.html
-    - topics.js(100개 주제 × 각 21문장) 먼저 로드
-    - 한국시간(KST) 기준 자정마다 자동으로 다음 주제로 전환
-    - 다시하기: 3문장씩 7회(=21문장) 순환
-    - 점수칩(왼쪽) & 성공칩(오른쪽): 80점 이상이면 성공칩 노출
-    - 풍부한 가드(로드 실패/데이터 불일치 진단), 디버그 모드(?debug=1)
-    - UI는 심플하고 가벼운 스타일. '화면은 기존대로' 요구를 해치지 않도록 유지
-  -->
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>오늘의 영어 학습</title>
-
-  <!-- ✅ 1) topics.js를 '반드시 먼저' 로드 (전역 window.TITLES / window.TOPIC_BANKS 제공)
-       - index.html과 같은 폴더라면 ./topics.js
-       - 캐시 무효화를 위해 v 파라미터를 가끔 갱신하세요.
-  -->
-  <script src="./topics.js?v=20250914"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>영어 학습 앱</title>
   <style>
-    :root{
-      --bg:#f8fafc; --fg:#0f172a; --card:#ffffff;
-      --brand:#4f46e5; --brand-dark:#4338ca;
-      --muted:#475569; --chip-green:#16a34a; --surface:#f1f5f9;
-      --danger:#ef4444; --warn:#f59e0b; --ok:#16a34a;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--fg);
+    body {
       font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif;
-      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      color: #0f172a;
     }
-    header{
-      background:var(--brand); color:#fff; padding:1rem; text-align:center;
-      font-weight:800; letter-spacing:.2px;
+    header {
+      background: #4f46e5;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.2rem;
     }
-    main{ max-width:900px; margin:auto; padding:1rem; }
-    .card{
-      background:var(--card); border-radius:18px;
-      box-shadow:0 10px 30px rgba(2,6,23,.06);
-      padding:1.5rem; margin:1.5rem 0;
+    main {
+      padding: 1rem;
+      max-width: 700px;
+      margin: auto;
     }
-    .row{ display:flex; gap:.5rem; align-items:center; justify-content:flex-end; margin-bottom:.5rem; flex-wrap:wrap; }
-    .chip{ display:inline-block; padding:.38rem .75rem; border-radius:9999px; font-size:.92rem; font-weight:700; }
-    .chip.score{ background:var(--brand); color:#fff; }
-    .chip.success{ background:var(--chip-green); color:#fff; }
-    .meta{ font-size:.86rem; color:var(--muted); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .meta .dot{ width:5px; height:5px; border-radius:50%; background:#cbd5e1; display:inline-block; }
-    #topicTitle{ margin:.25rem 0 1rem; line-height:1.25; }
-    .sentence{
-      margin:.6rem 0; padding:.85rem .95rem; border-radius:10px; background:var(--surface);
-      border:1px solid #e2e8f0;
+    .card {
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(2,6,23,.06);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
     }
-    .sentence b{ display:block; margin-bottom:.25rem }
-    button{
-      margin-top:1rem; background:var(--brand); color:#fff; border:none;
-      padding:.75rem 1.1rem; border-radius:10px; font-size:1rem; cursor:pointer;
-      transition:transform .02s ease-in-out, background .15s ease;
+    .chip-row {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
     }
-    button:hover{ background:var(--brand-dark); }
-    button:active{ transform:translateY(1px); }
-
-    /* 디버그 패널 (옵션) */
-    #debug{
-      display:none; margin-top:1rem; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      background:#0b1220; color:#e2e8f0; border-radius:12px; padding:1rem; overflow:auto;
+    .chip {
+      display: inline-block;
+      padding: 0.3rem 0.7rem;
+      border-radius: 9999px;
+      font-size: 0.9rem;
+      font-weight: 600;
     }
-    #debug .k{ color:#93c5fd } /* key */
-    #debug .v{ color:#a7f3d0 } /* value */
-    #debug .warn{ color:#fde68a }
-    #debug .err{ color:#fecaca }
-    .help{
-      color:#475569; font-size:.86rem; line-height:1.5; margin-top:.75rem;
+    .success {
+      background: #16a34a;
+      color: white;
     }
-    .help code{ background:#e2e8f0; padding:.1rem .3rem; border-radius:6px; }
+    .score {
+      background: #4f46e5;
+      color: white;
+    }
+    .sentence {
+      margin: 0.6rem 0;
+      padding: 0.8rem;
+      background: #f1f5f9;
+      border-radius: 10px;
+    }
+    button {
+      margin-top: 1rem;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #4338ca;
+    }
   </style>
+  <!-- 21문장 세트 topics.js 먼저 불러오기 -->
+  <script src="topics.js"></script>
 </head>
 <body>
   <header>오늘의 영어 학습</header>
-
   <main>
     <div class="card">
-      <!-- ✅ 점수칩(왼쪽) + 성공칩(오른쪽) -->
-      <div class="row">
-        <span id="scoreChip" class="chip score">점수: 0%</span>
-        <span id="successChip" class="chip success" style="display:none;">성공 🎉</span>
+      <div class="chip-row">
+        <div id="successChip" class="chip success" style="display:none;">성공 🎉</div>
+        <div id="scoreChip" class="chip score">점수: 0</div>
       </div>
-
-      <div class="meta">
-        <span>Day <span id="dayNum">1</span></span>
-        <span class="dot"></span>
-        <span>KST <span id="todayKST">—</span></span>
-      </div>
-
       <h2 id="topicTitle">주제</h2>
-
-      <div id="sentences" aria-live="polite"></div>
-
-      <button id="retryBtn" type="button" aria-label="다시하기: 다음 3문장 보기">다시하기 (3문장 교체)</button>
-
-      <div class="help">
-        <div>• <b>자정(KST)</b>이 되면 자동으로 다음 주제로 변경돼요.</div>
-        <div>• <b>다시하기</b>를 누를 때마다 <b>3문장씩</b> 바뀌고, 7번 누르면 다시 처음으로 순환해요.</div>
-        <div>• 점수가 <b>80점 이상</b>이면 <b>성공</b> 칩이 오른쪽에 표시돼요.</div>
-      </div>
-
-      <!-- 디버그 패널: URL에 ?debug=1를 붙이면 활성화됩니다 -->
-      <pre id="debug"></pre>
+      <div id="sentences"></div>
+      <button id="retryBtn">다시하기</button>
     </div>
   </main>
 
   <script>
-    // ============================================
-    // 0) 유틸: 쿼리 파라미터, 안전한 텍스트, 로그
-    // ============================================
-    const qp = new URLSearchParams(location.search);
-    const DEBUG = qp.get("debug")==="1";
+    const TITLES = window.TITLES;
+    const BANKS = window.TOPIC_BANKS;
 
-    function safeText(s){ return String(s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
-    function logDebug(lines){
-      if(!DEBUG) return;
-      const el = document.getElementById("debug");
-      el.style.display="block";
-      const out = Array.isArray(lines) ? lines.join("\n") : String(lines);
-      el.textContent += out + "\n";
-    }
+    let currentDayIndex = 0;
+    let sentenceIndex = 0;
+    let score = 0;
 
-    // ============================================
-    // 1) topics.js 로드 가드 (전역 window.TITLES / window.TOPIC_BANKS)
-    // ============================================
-    (function guardTopics(){
-      if (!window || !Array.isArray(window.TITLES) || !window.TITLES.length || !window.TOPIC_BANKS) {
-        console.error("[topics] topics.js 로드 실패: 경로/캐시/로드순서를 확인하세요.");
-        const hint = [
-          "⚠️ topics.js 로드 실패로 기본 데이터를 임시 사용합니다.",
-          "· index.html과 topics.js가 같은 폴더인지 확인",
-          "· <script src=\"./topics.js?v=날짜\">를 메인 스크립트보다 먼저 둠",
-          "· 브라우저 캐시 삭제 또는 쿼리스트링 갱신",
-          "· file:// 대신 간단 서버 권장 (예: npx serve, python -m http.server)"
-        ];
-        if(!DEBUG) alert(hint.join("\n"));
-        logDebug(hint);
-
-        // 안전망: 앱이 죽지 않도록 임시 1토픽/21문장 제공
-        window.TITLES = ["Coffee Break"];
-        window.TOPIC_BANKS = {
-          "Coffee Break": Array.from({length:21}, (_,i)=>({
-            en:`I enjoyed a simple coffee today. (${i+1})`,
-            ko:`오늘은 커피를 간단히 즐겼어요. (${i+1})`
-          }))
-        };
-      }
-    })();
-
-    // ============================================
-    // 2) KST(UTC+9) 날짜/시간
-    // ============================================
-    function kstNow(){
+    // 한국시간 기준 자정마다 새로운 주제로 변경
+    function getKSTDate() {
       const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset()*60000;
-      return new Date(utc + 9*60*60000);
-    }
-    function fmtKst(d){
-      // YYYY-MM-DD HH:mm:ss (KST)
-      const z = n=>String(n).padStart(2,"0");
-      return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
-    }
-    function todayKeyKST(){ return kstNow().toISOString().slice(0,10); } // YYYY-MM-DD
-
-    // ============================================
-    // 3) 진행 상태 (LocalStorage)
-    // ============================================
-    const LS_KEY="eng_app_progress_v2";
-    const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-    if (!saved.startDate) {
-      saved.startDate = todayKeyKST();               // 최초 접속한 KST 날짜가 Day 1의 시작
-      saved.scoreByDate = {};                        // 선택: 날짜별 점수 기록 (확장 여지)
-      localStorage.setItem(LS_KEY, JSON.stringify(saved));
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const kst = new Date(utc + (9 * 60 * 60000));
+      return kst;
     }
 
-    function computeDayFromStart(){
-      // 시작일의 KST 자정 기준으로 경과 일수 계산
-      const start = new Date(saved.startDate + "T00:00:00+09:00");
-      const diffDays = Math.floor((kstNow() - start) / 86400000);
-      return Math.max(1, diffDays + 1); // Day 1부터 시작
+    function getDayIndex() {
+      const start = new Date("2025-01-01T00:00:00+09:00"); // 기준일
+      const now = getKSTDate();
+      const diff = Math.floor((now - start) / (1000*60*60*24));
+      return diff % TITLES.length;
     }
 
-    // ============================================
-    // 4) 데이터 접근자
-    // ============================================
-    const TITLES = window.TITLES;           // 100개 주제
-    const BANKS  = window.TOPIC_BANKS;      // { title: [ {en,ko} × 21 ] }
-
-    function validateBanks(){
-      // 진단: 주제 수와 각 뱅크의 문장 수 확인
-      const issues = [];
-      if(!Array.isArray(TITLES)) issues.push("TITLES가 배열이 아닙니다.");
-      if(Array.isArray(TITLES) && TITLES.length!==100){
-        issues.push(`TITLES 길이 = ${TITLES.length} (예상: 100)`);
-      }
-      let bad = 0;
-      (TITLES||[]).forEach(t=>{
-        const arr = (BANKS && BANKS[t]) || [];
-        if(arr.length!==21){ bad++; issues.push(`"${t}" 문장 수 = ${arr.length} (예상: 21)`); }
-      });
-      if(issues.length){
-        logDebug(["[검증] 주제/문장 진단:", ...issues]);
-      }else{
-        logDebug(["[검증] 모든 주제(100)와 문장(각 21개) 정상 ✅"]);
-      }
+    function loadTopic() {
+      currentDayIndex = getDayIndex();
+      const topic = TITLES[currentDayIndex];
+      document.getElementById("topicTitle").innerText = topic;
+      sentenceIndex = 0;
+      renderSentences();
     }
 
-    function bank21(title){
-      const arr = (BANKS && BANKS[title]) || [];
-      if (arr.length === 21) return arr;
-      // 안전망: 부족하면 즉시 보충(앱 중단 방지)
-      return Array.from({length:21}, (_,i)=>({
-        en:`I studied ${title} today. (${i+1})`,
-        ko:`오늘 ${title}를(을) 공부했어요. (${i+1})`
-      }));
-    }
+    function renderSentences() {
+      const topic = TITLES[currentDayIndex];
+      const bank = BANKS[topic] || [];
+      const container = document.getElementById("sentences");
+      container.innerHTML = "";
 
-    // ============================================
-    // 5) 상태 & DOM 참조
-    // ============================================
-    let score = 0;     // 0~100 (예시 가점 로직 사용)
-    let offset = 0;    // 0,3,6,...,18 (3문장씩 7회 순환)
-    let lastDate = todayKeyKST();
-
-    const $dayNum = document.getElementById("dayNum");
-    const $todayKST = document.getElementById("todayKST");
-    const $topicTitle = document.getElementById("topicTitle");
-    const $sentences = document.getElementById("sentences");
-    const $scoreChip = document.getElementById("scoreChip");
-    const $successChip = document.getElementById("successChip");
-    const $retryBtn = document.getElementById("retryBtn");
-
-    // ============================================
-    // 6) 렌더링
-    // ============================================
-    function currentTitleByDay(day){
-      // day는 1부터 시작, TITLES.length로 순환
-      return TITLES[(day - 1) % TITLES.length] || "—";
-    }
-
-    function render(){
-      const day = computeDayFromStart();
-      const title = currentTitleByDay(day);
-
-      $dayNum.textContent = day;
-      const now = kstNow();
-      $todayKST.textContent = fmtKst(now);
-      $topicTitle.textContent = title;
-
-      const bank = bank21(title);
-      const group = [ bank[(offset+0)%21], bank[(offset+1)%21], bank[(offset+2)%21] ];
-
-      $sentences.innerHTML = "";
-      group.forEach(s=>{
+      const chunk = bank.slice(sentenceIndex, sentenceIndex+3);
+      chunk.forEach(s => {
         const div = document.createElement("div");
         div.className = "sentence";
-        div.innerHTML = `<b>${safeText(s.en)}</b>${safeText(s.ko)}`;
-        $sentences.appendChild(div);
+        div.innerHTML = `<b>${s.en}</b><br/>${s.ko}`;
+        container.appendChild(div);
       });
 
-      // 점수칩 업데이트 + 성공칩(오른쪽) 노출
-      $scoreChip.textContent = `점수: ${score}%`;
-      $successChip.style.display = (score >= 80) ? "inline-block" : "none";
-
-      // 디버그 정보
-      logDebug([
-        "---- RENDER ----",
-        `day: ${day}`,
-        `title: ${title}`,
-        `offset: ${offset} (group indices: ${(offset+0)%21}, ${(offset+1)%21}, ${(offset+2)%21})`,
-        `score: ${score}%`,
-        `time(KST): ${fmtKst(now)}`
-      ]);
+      sentenceIndex += 3;
+      if (sentenceIndex >= bank.length) sentenceIndex = 0;
     }
 
-    // ============================================
-    // 7) 이벤트: 다시하기(3문장 × 7회 순환)
-    // ============================================
-    $retryBtn.addEventListener("click", ()=>{
-      offset = (offset + 3) % 21;           // 0→3→6→…→18→0
-      score = Math.min(100, score + 10);    // 예시 가점(원하시면 실제 채점 로직으로 교체)
-      render();
+    function updateScore(points) {
+      score += points;
+      document.getElementById("scoreChip").innerText = `점수: ${score}`;
+      if (score >= 80) {
+        document.getElementById("successChip").style.display = "inline-block";
+      } else {
+        document.getElementById("successChip").style.display = "none";
+      }
+    }
+
+    document.getElementById("retryBtn").addEventListener("click", () => {
+      renderSentences();
+      updateScore(10); // 예시: 문장 묶음 볼 때마다 10점 추가
     });
 
-    // ============================================
-    // 8) KST 자정 체크(1초 간격 시계 + 1분 간격 날짜 전환)
-    //    - 시계: 매초 갱신
-    //    - 날짜 바뀌면(자정) 주제/점수/오프셋 초기화
-    // ============================================
-    setInterval(()=>{ // 시계
-      $todayKST.textContent = fmtKst(kstNow());
-    }, 1000);
-
-    setInterval(()=>{ // 자정 감지
-      const nowKey = todayKeyKST();
-      if (nowKey !== lastDate) {
-        lastDate = nowKey;
-        offset = 0;  // 새 날엔 첫 3문장부터
-        score  = 0;  // 점수 리셋(정책에 맞춰 조정 가능)
-        render();
-      }
-    }, 60 * 1000);
-
-    // ============================================
-    // 9) 초기화
-    // ============================================
-    try { validateBanks(); } catch(e){ logDebug(["[검증 오류]", String(e)]); }
-    render();
-
-    // ============================================
-    // 10) 추가 도움말: 로드 문제 해결 가이드 (디버그 모드에서만)
-    // ============================================
-    if (DEBUG) {
-      const tips = [
-        "",
-        "=== 로드 진단 가이드 ===",
-        "- topics.js가 index.html보다 먼저 로드되는지 확인 (<head> 상단)",
-        "- 경로: index.html과 같은 폴더면 src=\"./topics.js\"",
-        "- 캐시: 쿼리스트링 갱신 (?v=yyyyMMdd 등) 또는 강력 새로고침",
-        "- 로컬 파일(file://) 대신 간단 서버에서 열기 (CORS/모듈 이슈 회피)",
-        "- 콘솔 에러 확인(F12)"
-      ];
-      logDebug(tips);
-    }
+    // 초기 로드
+    loadTopic();
   </script>
 </body>
 </html>
-
