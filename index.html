@@ -46,7 +46,6 @@
   .line p{margin:0 0 8px;font-size:18px;line-height:1.5}
   .line p.ko{margin:0 0 10px; font-size:15.5px; line-height:1.6; color:#cbd4f5}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-
   .btn{
     appearance:none;border:none;border-radius:12px;padding:10px 14px;
     background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:44px;
@@ -59,27 +58,19 @@
   .btn.warn{background:#3a2a0e;border-color:#9f6b18}
   .btn.ghost{background:transparent;border-color:#2b3f7a}
   .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
-
   .chip{display:inline-flex; align-items:center; gap:8px; padding:8px 12px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px}
   .chip::before{content:''; width:8px; height:8px; border-radius:50%; background:linear-gradient(180deg,#a7baff,#5b8cff); box-shadow:0 0 0 2px rgba(91,140,255,.15);}
   .score{font-weight:900}
-
   .meter{height:12px;background:#0e1330;border-radius:999px;border:1px solid var(--ring);overflow:hidden}
   .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
-
   .kpi{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-
   .calendar{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
   .day{aspect-ratio:1/1;border:1px solid #2d3d72;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0e1430;color:#c9d4ff;font-weight:700; font-size:14px}
   @media (max-width:520px){ .calendar{grid-template-columns:repeat(7,1fr)} .day{font-size:13px} .line p{font-size:16px} .title{font-size:22px}}
-
   .toast{position:fixed;inset:auto 0 18px 0;display:flex;justify-content:center;pointer-events:none}
   .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
-
   .small{font-size:12px;color:#a7b3d6}
   .hint{font-size:12.5px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:10px 12px;border-radius:10px}
-
-  /* 연속 말하기 패널 */
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:9999;}
   .practice .box{width:min(720px,94vw); max-height:92vh; overflow:auto; background:#101733; border:1px solid var(--ring); border-radius:16px; padding:16px; box-shadow:var(--shadow);}
   .practice .box h3{margin:0 0 12px; font-size:18px;}
@@ -195,7 +186,7 @@ function getTodayDay(){
   return d;
 }
 
-/* ====== Data (100 Titles) ====== */
+/* ====== 100 Titles ====== */
 const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
   'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
   'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
@@ -209,275 +200,322 @@ const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeti
   'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
 ];
 
-/* ====== TOPIC BANKS ======
-   - 각 주제는 (1) 완전 커스텀 21문장 배열 또는
-                 (2) category 키워드(예: 'coffee','airport',...) 로 지정 가능
-   - 아래 기본 세팅은 100개 전체 주제를 카테고리로 분류해 둠.
-   - 특정 주제를 완전 커스텀하고 싶으면 해당 키에 21문장 배열을 직접 넣으면 됩니다.
-*/
-const TOPIC_BANKS = {
-  // 일상/이동
-  'Morning Routine': 'routine',
-  'Commuting': 'commute',
-  // 커피 관련
-  'Coffee Break': 'coffee',
-  'Morning Coffee': 'coffee',
-  'Coffee Chat': 'coffee',
-  // 업무/회의/문서
-  'Emails': 'emails',
-  'Team Meeting': 'meeting',
-  'Project Update': 'work',
-  'Note Taking': 'study',
-  'Presentation Prep': 'presentation',
-  'Public Speaking': 'public_speaking',
-  'Mentor Advice': 'mentoring',
-  'Goal Setting': 'planning',
-  'Habit Tracking': 'habit',
-  'Budgeting': 'budget',
-  // 식사/쇼핑/헬스
-  'Lunch Out': 'dining',
-  'Groceries': 'groceries',
-  'Gym': 'gym',
-  // 저녁/여가
-  'Evening Walk': 'walk',
-  'Streaming Show': 'streaming',
-  'Weekend Plan': 'weekend',
-  'Laundry': 'homecare',
-  'Room Cleaning': 'homecare',
-  'Errands': 'errands',
-  'Bank Visit': 'bank',
-  'Pharmacy': 'pharmacy',
-  'Salon': 'salon',
-  'Car Wash': 'car_wash',
-  'Pet Care': 'pet',
-  'Cooking Dinner': 'cooking',
-  'Takeout': 'takeout',
-  'Birthday Party': 'party',
-  'Small Talk': 'smalltalk',
-  'Weather Chat': 'weather_chat',
-  'Sports Talk': 'sports',
-  'News Catch-up': 'news',
-  'Book Club': 'book',
-  'Movie Night': 'movie',
-  'Concert': 'concert',
-  // 학습/도서관
-  'Study Session': 'study',
-  'Library Visit': 'library',
-  // 온라인/쇼핑/고객
-  'Online Shopping': 'shopping',
-  'Return/Refund': 'refund',
-  'Customer Service': 'customer_service',
-  // 여행
-  'Travel Plan': 'travel',
-  'Packing': 'packing',
-  'Airport': 'airport',
-  'Hotel Check-in': 'hotel',
-  'City Tour': 'tour',
-  'Photo Walk': 'photo',
-  'Museum': 'museum',
-  'Park Picnic': 'picnic',
-  'Beach Day': 'beach',
-  'Hiking': 'hiking',
-  // 날씨
-  'Rainy Day': 'rain',
-  'Snow Day': 'snow',
-  'Heat Wave': 'heat',
-  'Cold Snap': 'cold',
-  // 건강
-  'Sick Day': 'sick',
-  'Clinic Visit': 'clinic',
-  'Dentist Visit': 'dentist',
-  // 업무 페이스
-  'Back to Work': 'work',
-  'Overtime': 'overtime',
-  'Deadline Push': 'deadline',
-  'Celebration': 'celebration',
-  'Thank-you Notes': 'thanks',
-  'Apology': 'apology',
-  // 약속/시간
-  'Making Plans': 'plans',
-  'Canceling Plans': 'cancel',
-  'Running Late': 'late',
-  'Time Management': 'timemanage',
-  // 하루 리듬
-  'Afternoon Slump': 'slump',
-  'Power Nap': 'nap',
-  'Evening Class': 'class',
-  'Night Drive': 'drive',
-  'Late Snack': 'snack',
-  // 소통
-  'Phone Call': 'phone',
-  'Video Call': 'video',
-  'Texting': 'text',
-  'Social Media': 'social',
-  // 마음/기록/콘텐츠
-  'Digital Detox': 'detox',
-  'Mindfulness': 'mindfulness',
-  'Journaling': 'journal',
-  'Reading': 'reading',
-  'Music Playlist': 'music',
-  'Podcast': 'podcast',
-  'Language Practice': 'language',
-  // 커리어
-  'Networking': 'network',
-  'Interview Prep': 'interview',
-  'Part-time Job': 'parttime',
-  // 사이드/제작
-  'Side Project': 'side',
-  'Coding Session': 'coding',
-  'Design Draft': 'design',
-  'Feedback Round': 'feedback',
-  'Revision': 'revision',
-  'Final Review': 'final_review',
-  'Presentation Day': 'presentation_day',
-  // 휴식/가족/친구/데이트
-  'Rest Day': 'rest',
-  'Family Dinner': 'family',
-  'Friends Hangout': 'friends',
-  'Date Night': 'date',
-  'Neighborhood Walk': 'walk',
-  'Farmer’s Market': 'market',
-  // 집/환경/공동체
-  'Car Maintenance': 'car_maint',
-  'House Plants': 'plants',
-  'Recycling': 'recycling',
-  'Donation': 'donation',
-  'Volunteering': 'volunteer',
-  'Community Event': 'community',
-  'Holiday Prep': 'holiday'
-};
-
-/* ====== 카테고리별 문장 템플릿 ======
-   - 각 카테고리에서 21문장을 정확히 반환 (en/ko 페어)
-   - 커피/공항 등은 전용 콘텐츠, 기타는 범용 "주제 맞춤 템플릿"
-*/
-function lines_coffee(){
-  return [
-    {en:"I drink a cup of coffee every morning.", ko:"나는 매일 아침 커피를 한 잔 마셔요."},
-    {en:"I tried a new coffee shop today.", ko:"오늘 새로운 커피숍에 가봤어요."},
-    {en:"I like iced coffee in the summer.", ko:"여름에는 아이스커피를 좋아해요."},
-    {en:"Too much coffee makes me nervous.", ko:"커피를 너무 많이 마시면 신경이 예민해져요."},
-    {en:"I ordered a latte with no sugar.", ko:"설탕 없이 라테를 주문했어요."},
-    {en:"The aroma of fresh coffee woke me up.", ko:"갓 내린 커피 향이 잠을 깨워줬어요."},
-    {en:"I ground the beans right before brewing.", ko:"추출하기 직전에 원두를 갈았어요."},
-    {en:"I’m learning to make better pour-over.", ko:"더 맛있는 푸어오버를 배우고 있어요."},
-    {en:"I added a splash of milk to my coffee.", ko:"커피에 우유를 약간 넣었어요."},
-    {en:"We chatted over coffee after lunch.", ko:"점심 후 커피 마시며 수다를 떨었어요."},
-    {en:"I switched to decaf in the evening.", ko:"저녁에는 디카페인으로 바꿨어요."},
-    {en:"The barista recommended a seasonal blend.", ko:"바리스타가 시즌 블렌드를 추천했어요."},
-    {en:"I tried a single-origin espresso shot.", ko:"싱글 오리진 에스프레소 샷을 마셔봤어요."},
-    {en:"I compared light and dark roasts.", ko:"라이트 로스트와 다크 로스트를 비교해 봤어요."},
-    {en:"I cleaned my coffee grinder today.", ko:"오늘 커피 그라인더를 청소했어요."},
-    {en:"I set a budget for my coffee spending.", ko:"커피 지출 예산을 정했어요."},
-    {en:"I skipped coffee to sleep better tonight.", ko:"오늘 밤 숙면을 위해 커피를 건너뛰었어요."},
-    {en:"I paired coffee with a small dessert.", ko:"커피와 작은 디저트를 곁들였어요."},
-    {en:"The café was cozy and quiet.", ko:"카페가 아늑하고 조용했어요."},
-    {en:"I learned a new brewing ratio.", ko:"새로운 추출 비율을 배웠어요."},
-    {en:"I’m glad my coffee turned out smooth.", ko:"커피가 부드럽게 잘 나와서 만족했어요."},
-  ];
-}
-function lines_airport(){
-  return [
-    {en:"I checked in online before going to the airport.", ko:"공항에 가기 전에 온라인 체크인을 했어요."},
-    {en:"I arrived early to avoid long lines.", ko:"긴 줄을 피하려고 일찍 도착했어요."},
-    {en:"Security screening was quick today.", ko:"오늘 보안 검색이 빨랐어요."},
-    {en:"I printed my boarding pass just in case.", ko:"혹시 몰라 탑승권을 출력했어요."},
-    {en:"I double-checked my gate and seat number.", ko:"게이트와 좌석 번호를 다시 확인했어요."},
-    {en:"I put my liquids in a clear bag.", ko:"액체류를 투명한 봉투에 넣었어요."},
-    {en:"I kept my passport in an easy-to-reach pocket.", ko:"여권을 꺼내기 쉬운 주머니에 넣어두었어요."},
-    {en:"I grabbed a quick snack before boarding.", ko:"탑승 전에 간단히 간식을 먹었어요."},
-    {en:"Boarding started right on time.", ko:"탑승이 제시간에 시작됐어요."},
-    {en:"I listened for announcements near the gate.", ko:"게이트 근처에서 안내 방송을 들었어요."},
-    {en:"I used a carry-on to travel light.", ko:"가볍게 들고 탈 수화물만 가져갔어요."},
-    {en:"I kept my phone charged for the e-ticket.", ko:"전자 탑승권을 위해 휴대폰을 충전해 두었어요."},
-    {en:"I checked the baggage weight limit.", ko:"수하물 무게 제한을 확인했어요."},
-    {en:"I asked for a window seat politely.", ko:"창가 자리를 정중히 부탁했어요."},
-    {en:"I watched the planes take off and land.", ko:"비행기 이륙과 착륙을 구경했어요."},
-    {en:"I followed the signs to immigration.", ko:"표지판을 따라 출입국 심사로 갔어요."},
-    {en:"I filled out the arrival form carefully.", ko:"입국 신고서를 꼼꼼히 작성했어요."},
-    {en:"I kept my valuables in my personal bag.", ko:"귀중품은 개인 가방에 보관했어요."},
-    {en:"I checked the airport map to find my gate.", ko:"공항 지도를 보고 게이트를 찾았어요."},
-    {en:"I stretched my legs before the long flight.", ko:"긴 비행 전 다리를 쭉 폈어요."},
-    {en:"I’m glad the flight departed smoothly.", ko:"비행기가 순조롭게 출발해서 다행이에요."},
-  ];
-}
-function lines_hotel(){
-  return [
-    {en:"I confirmed my reservation before the trip.", ko:"여행 전에 예약을 확인했어요."},
-    {en:"I asked for early check-in politely.", ko:"정중하게 얼리 체크인을 요청했어요."},
-    {en:"I showed my ID and booking number at the desk.", ko:"데스크에서 신분증과 예약번호를 보여줬어요."},
-    {en:"I requested a quiet room on a higher floor.", ko:"층고가 높은 조용한 방을 부탁했어요."},
-    {en:"I checked the room for cleanliness.", ko:"객실 청결 상태를 확인했어요."},
-    {en:"I tested the key card and safe.", ko:"키 카드와 금고를 점검했어요."},
-    {en:"I asked about breakfast hours.", ko:"아침 식사 시간을 물어봤어요."},
-    {en:"I set the air conditioner to a comfortable level.", ko:"에어컨을 편안한 온도로 설정했어요."},
-    {en:"I used the luggage rack to keep things tidy.", ko:"짐 정리를 위해 러기지랙을 사용했어요."},
-    {en:"I called the front desk for extra towels.", ko:"수건을 더 달라고 프런트에 전화했어요."},
-    {en:"I planned tomorrow’s route with the hotel map.", ko:"호텔 지도로 내일 동선을 계획했어요."},
-    {en:"I charged my devices near the desk.", ko:"책상 근처에서 기기를 충전했어요."},
-    {en:"I put the ‘Do Not Disturb’ sign on the door.", ko:"문에 '객실 정중' 표지를 걸었어요."},
-    {en:"I checked out the gym and pool hours.", ko:"헬스장과 수영장 운영 시간을 확인했어요."},
-    {en:"I kept my passport in the room safe.", ko:"여권을 객실 금고에 보관했어요."},
-    {en:"I requested a late checkout if possible.", ko:"가능하면 레이트 체크아웃을 요청했어요."},
-    {en:"I thanked the staff for their help.", ko:"직원들의 도움에 감사 인사를 했어요."},
-    {en:"I left a small tip for housekeeping.", ko:"하우스키핑을 위해 작은 팁을 남겼어요."},
-    {en:"I checked out smoothly at the front desk.", ko:"프런트에서 수월하게 체크아웃했어요."},
-    {en:"I saved the hotel address on my phone.", ko:"호텔 주소를 휴대폰에 저장해 두었어요."},
-    {en:"I’m happy the room met my needs.", ko:"객실이 기대에 맞아서 만족했어요."},
-  ];
-}
-
-/* ====== 범용/다수 카테고리 템플릿 ======
-   - title(주제명)을 자연스럽게 끼워 넣되, 실제 상황 맥락으로 21문장 구성
-*/
-function lines_generic(title){
-  const t = title;
+/* ====== Fallback 21-line template (kept from the original) ====== */
+function bank21_fallback(title){
+  const t = title.toLowerCase();
   return [
     {en:`I spent some time on ${t} today.`, ko:`오늘 ${t}에 시간을 좀 썼어요.`},
-    {en:`I tried to keep ${t} simple and practical.`, ko:`${t}는 실용적으로, 간단히 해봤어요.`},
+    {en:`I tried to keep ${t} simple.`, ko:`${t}는 최대한 심플하게 해봤어요.`},
     {en:`Honestly, ${t} took longer than I expected.`, ko:`솔직히 ${t}가 생각보다 오래 걸렸어요.`},
-    {en:`I finally made progress with ${t}.`, ko:`드디어 ${t}에서 진전이 있었어요.`},
-    {en:`I set one clear goal for ${t}.`, ko:`${t}를 위해 명확한 목표 하나를 정했어요.`},
-    {en:`I checked a few details related to ${t}.`, ko:`${t}와 관련된 몇 가지 디테일을 점검했어요.`},
-    {en:`I talked about ${t} with a friend briefly.`, ko:`${t}에 대해 친구와 잠깐 이야기했어요.`},
-    {en:`I learned a small tip that helps with ${t}.`, ko:`${t}에 도움이 되는 작은 팁을 배웠어요.`},
-    {en:`I wrote down notes to improve ${t} next time.`, ko:`다음에 ${t}를 더 잘하려고 메모를 남겼어요.`},
-    {en:`I kept my expectations realistic for ${t}.`, ko:`${t}에 대한 기대치를 현실적으로 잡았어요.`},
-    {en:`I planned a simple routine around ${t}.`, ko:`${t}를 위한 간단한 루틴을 세웠어요.`},
-    {en:`I found a tool that makes ${t} easier.`, ko:`${t}를 더 쉽게 하는 도구를 찾았어요.`},
-    {en:`I practiced a few times to get used to ${t}.`, ko:`${t}에 익숙해지려고 몇 번 연습했어요.`},
-    {en:`I checked my progress on ${t}.`, ko:`${t} 진행 상황을 확인했어요.`},
-    {en:`I fixed a small issue that blocked ${t}.`, ko:`${t}를 막던 작은 문제를 해결했어요.`},
-    {en:`I adjusted my schedule to fit ${t}.`, ko:`${t}에 맞게 일정을 조정했어요.`},
-    {en:`I asked for feedback about ${t}.`, ko:`${t}에 대한 피드백을 요청했어요.`},
-    {en:`I kept ${t} consistent but flexible.`, ko:`${t}를 꾸준히 하되 유연하게 했어요.`},
-    {en:`I wrapped up the basics of ${t}.`, ko:`${t}의 기본을 마무리했어요.`},
-    {en:`I set a reminder to revisit ${t} soon.`, ko:`곧 ${t}를 다시 보려고 알림을 설정했어요.`},
-    {en:`I’m glad ${t} is moving in the right direction.`, ko:`${t}가 좋은 방향으로 가서 다행이에요.`},
+    {en:`I finally got around to ${t}.`, ko:`드디어 ${t}를 하게 됐어요.`},
+    {en:`I checked in on ${t} after work.`, ko:`퇴근 후 ${t}를 잠깐 살펴봤어요.`},
+    {en:`Nothing fancy with ${t}—just the basics.`, ko:`${t}는 거창하게 안 하고 기본만 했어요.`},
+    {en:`I made steady progress on ${t}.`, ko:`${t}는 꾸준히 진전이 있었어요.`},
+    {en:`I kept ${t} practical, not overthinking it.`, ko:`${t}는 실용적으로, 과하게 고민하진 않았어요.`},
+    {en:`We talked about ${t} for a bit.`, ko:`${t}에 대해 잠깐 얘기했어요.`},
+    {en:`I’ll try to be more consistent with ${t}.`, ko:`${t}를 더 꾸준히 해볼게요.`},
+    {en:`Next time, I’ll plan ${t} ahead.`, ko:`다음엔 ${t}를 미리 계획해볼게요.`},
+    {en:`Small wins on ${t} still count.`, ko:`${t}에서 작은 성취도 의미 있어요.`},
+    {en:`Slow and steady works for ${t}.`, ko:`${t}는 천천히 꾸준히가 맞는 것 같아요.`},
+    {en:`I had a quick update on ${t}.`, ko:`${t} 관련해 간단히 업데이트했어요.`},
+    {en:`I kept ${t} light but useful.`, ko:`${t}는 가볍게 했지만 유익했어요.`},
+    {en:`I ran into a small hiccup with ${t}.`, ko:`${t}에서 작은 문제가 있었어요.`},
+    {en:`I sorted out a few details for ${t}.`, ko:`${t}의 몇 가지 디테일을 정리했어요.`},
+    {en:`${t} wasn’t perfect, but it moved forward.`, ko:`${t}가 완벽하진 않았지만 진전됐어요.`},
+    {en:`I wrapped up the basics of ${t}.`, ko:`${t}의 기본은 마무리했어요.`},
+    {en:`I set a simple goal for ${t} this week.`, ko:`이번 주 ${t}에 단순한 목표를 세웠어요.`},
+    {en:`I’m glad ${t} is finally on track.`, ko:`${t}가 드디어 궤도에 올라서 다행이에요.`},
   ];
 }
 
-/* ====== 카테고리 라우팅 ====== */
-function build21ByCategory(cat, title){
-  switch(cat){
-    case 'coffee': return lines_coffee();
-    case 'airport': return lines_airport();
-    case 'hotel': return lines_hotel();
-    // 아래는 간결화를 위해 대부분 generic에 title 주입.
-    // 필요 시 같은 방식으로 카테고리 전용 세트를 추가해 주세요.
-    default: return lines_generic(title);
-  }
-}
+/* ====== Handcrafted 21-line sets per topic (EN/KR) ======
+   - 수작업 세트가 존재하면 이것을 사용하고,
+   - 없으면 위의 fallback으로 자동 대체됩니다.
+   - 현재 10개 주제(예시) 수작업 완성. 이후 확장 가능.
+*/
+const HANDCRAFTED_21 = {
+  "Morning Routine": [
+    {en:"I woke up to a gentle alarm and didn’t hit snooze.", ko:"잔잔한 알람 소리에 일어나고, 스누즈는 누르지 않았어요."},
+    {en:"I drank a glass of warm water before anything else.", ko:"무엇보다 먼저 미지근한 물 한 잔을 마셨어요."},
+    {en:"I stretched my neck and shoulders for a minute.", ko:"목과 어깨를 1분 정도 가볍게 스트레칭했어요."},
+    {en:"I made my bed to start the day tidy.", ko:"정돈된 하루를 위해 침대를 먼저 정리했어요."},
+    {en:"I opened the window and let the fresh air in.", ko:"창문을 열어 상쾌한 공기를 들였어요."},
+    {en:"I brewed a simple coffee and enjoyed the aroma.", ko:"간단히 커피를 내려 향을 즐겼어요."},
+    {en:"I planned three priorities in my notebook.", ko:"노트에 오늘의 우선순위 세 가지를 적었어요."},
+    {en:"I did a five-minute breathing exercise.", ko:"5분 호흡 연습으로 마음을 가다듬었어요."},
+    {en:"I kept breakfast light but balanced.", ko:"아침은 가볍지만 균형 있게 챙겼어요."},
+    {en:"I checked the weather and picked comfortable clothes.", ko:"날씨를 확인하고 편한 옷을 골랐어요."},
+    {en:"I left the phone face down to avoid distractions.", ko:"산만함을 막으려고 폰을 화면 아래로 두었어요."},
+    {en:"I read a short paragraph to wake my brain up.", ko:"뇌를 깨우려고 짧은 글을 읽었어요."},
+    {en:"I watered my plant before heading out.", ko:"나가기 전에 화분에 물을 줬어요."},
+    {en:"I packed my bag the night before, so it was easy.", ko:"전날 가방을 챙겨둬서 준비가 수월했어요."},
+    {en:"I left home five minutes earlier than usual.", ko:"평소보다 5분 일찍 집을 나섰어요."},
+    {en:"I reminded myself to be kind and patient today.", ko:"오늘은 친절과 인내를 기억하자고 다짐했어요."},
+    {en:"I kept my morning routine simple and calm.", ko:"아침 루틴을 단순하고 차분하게 유지했어요."},
+    {en:"I skipped scrolling and saved time.", ko:"무의식적 스크롤을 건너뛰어 시간을 아꼈어요."},
+    {en:"I took a deep breath before locking the door.", ko:"문을 잠그기 전에 깊게 한 번 숨을 들이쉬었어요."},
+    {en:"I felt ready to start the day on purpose.", ko:"의도 있는 시작으로 하루를 맞이할 준비가 되었어요."},
+    {en:"I told myself, 'One small win at a time.'", ko:"‘작은 성취 하나씩’이라고 스스로에게 말했어요."},
+  ],
+  "Commuting": [
+    {en:"I caught my usual bus without rushing.", ko:"허둥대지 않고 평소 타던 버스를 잡았어요."},
+    {en:"I used the ride to review my schedule.", ko:"이동 시간에 일정을 점검했어요."},
+    {en:"I listened to a short podcast episode.", ko:"짧은 팟캐스트를 한 편 들었어요."},
+    {en:"I stood near the door to get off smoothly.", ko:"내리기 편하게 문 근처에 섰어요."},
+    {en:"I offered my seat to someone who needed it.", ko:"자리 양보가 필요한 분께 자리를 내드렸어요."},
+    {en:"I practiced silent breathing when it got crowded.", ko:"혼잡할 때 조용히 호흡을 가다듬었어요."},
+    {en:"I avoided doom-scrolling and watched outside.", ko:"무의미한 스크롤을 피하고 창밖을 바라봤어요."},
+    {en:"I sent a quick update that I’d arrive on time.", ko:"정시에 도착한다고 간단히 알렸어요."},
+    {en:"I double-checked my stop—no surprises today.", ko:"내릴 정류장을 다시 확인해 실수 없었어요."},
+    {en:"I kept my bag zipped and close to me.", ko:"가방 지퍼를 잠그고 몸 가까이 뒀어요."},
+    {en:"I let a train pass to get a less crowded one.", ko:"덜 붐비는 열차를 타려고 한 대를 보냈어요."},
+    {en:"I stretched my calves while standing.", ko:"서 있는 동안 종아리를 스트레칭했어요."},
+    {en:"I smiled at a driver who waited for pedestrians.", ko:"보행자를 배려한 운전자에게 미소로 답했어요."},
+    {en:"I walked the last block to wake myself up.", ko:"마지막 한 블록은 걸으며 몸을 깨웠어요."},
+    {en:"I was mindful of my posture the whole time.", ko:"내내 자세를 의식하며 유지했어요."},
+    {en:"I arrived with a few minutes to spare.", ko:"여유 있게 몇 분 일찍 도착했어요."},
+    {en:"I thanked myself for a calm commute.", ko:"침착한 통근을 한 나에게 고마웠어요."},
+    {en:"I noticed a new café near the station.", ko:"역 근처 새 카페를 발견했어요."},
+    {en:"I kept ear volume low to protect hearing.", ko:"청력을 지키려고 볼륨을 낮게 유지했어요."},
+    {en:"I ended the ride feeling steady and clear.", ko:"안정되고 맑은 기분으로 이동을 마쳤어요."},
+    {en:"I said, 'That was smoother than yesterday.'", ko:"‘어제보다 한결 수월했어.’라고 생각했어요."},
+  ],
+  "Coffee Break": [
+    {en:"I chose a lighter roast for a gentle flavor.", ko:"부드러운 맛을 위해 라이트 로스트를 골랐어요."},
+    {en:"I tried not to add sugar this time.", ko:"이번에는 설탕을 넣지 않으려 노력했어요."},
+    {en:"I paired coffee with a handful of nuts.", ko:"견과 한 줌과 커피를 곁들였어요."},
+    {en:"I took three slow breaths before the first sip.", ko:"첫 모금 전에 천천히 세 번 숨을 쉬었어요."},
+    {en:"I chatted briefly with the barista.", ko:"바리스타와 짧게 대화를 나눴어요."},
+    {en:"I sat by the window for natural light.", ko:"창가 자리에 앉아 자연광을 즐겼어요."},
+    {en:"I kept the break to ten mindful minutes.", ko:"10분 정도의 온전한 휴식으로 제한했어요."},
+    {en:"I noticed hints of citrus in the coffee.", ko:"커피에서 시트러스 향을 느꼈어요."},
+    {en:"I skipped my phone and watched people pass by.", ko:"폰은 내려놓고 지나가는 사람들을 바라봤어요."},
+    {en:"I refilled my water to stay hydrated.", ko:"수분 보충을 위해 물도 채워둔 뒤였어요."},
+    {en:"I thanked the team by bringing back a cup.", ko:"동료에게 커피를 하나 사와 감사의 뜻을 전했어요."},
+    {en:"I cleaned the mug right after finishing.", ko:"다 마시고 바로 머그컵을 씻었어요."},
+    {en:"I avoided a second cup in the afternoon.", ko:"오후에는 두 번째 컵을 참았어요."},
+    {en:"I tried a new origin I hadn’t tasted before.", ko:"처음 마셔보는 원두를 시도했어요."},
+    {en:"I savored the warmth and slowed my pace.", ko:"따뜻함을 음미하며 속도를 늦췄어요."},
+    {en:"I kept the talk light and friendly.", ko:"대화는 가볍고 친근하게 유지했어요."},
+    {en:"I left the café feeling refreshed.", ko:"카페를 나올 때는 상쾌했어요."},
+    {en:"I reminded myself not to drink too late.", ko:"너무 늦게 마시지 않도록 스스로에게 상기했어요."},
+    {en:"I logged the taste notes in my journal.", ko:"맛 노트를 간단히 기록했어요."},
+    {en:"I enjoyed the small ritual of a clean pour.", ko:"깨끗한 푸어의 작은 의식을 즐겼어요."},
+    {en:"I said, 'That cup was just right.'", ko:"‘방금 그 한 잔, 딱 좋았어.’라고 생각했어요."},
+  ],
+  "Emails": [
+    {en:"I cleared the inbox to zero once today.", ko:"오늘 한 번은 인박스를 ‘0’으로 비웠어요."},
+    {en:"I answered the oldest message first.", ko:"가장 오래된 메일부터 답장했어요."},
+    {en:"I used clear subject lines with verbs.", ko:"동사가 보이는 명확한 제목을 썼어요."},
+    {en:"I kept each reply under five sentences.", ko:"답장은 다섯 문장 이내로 제한했어요."},
+    {en:"I turned long threads into quick calls.", ko:"길어진 스레드는 간단 통화로 전환했어요."},
+    {en:"I added deadlines instead of vague words.", ko:"애매한 표현 대신 마감일을 명시했어요."},
+    {en:"I thanked people for prompt follow-ups.", ko:"빠른 회신에 감사 인사를 전했어요."},
+    {en:"I archived newsletters after skimming.", ko:"뉴스레터는 훑어보고 보관 처리했어요."},
+    {en:"I unsubscribed from one noisy list.", ko:"시끄러운 구독 하나를 해지했어요."},
+    {en:"I delayed a message to send next morning.", ko:"메일 하나는 다음 날 아침 발송으로 예약했어요."},
+    {en:"I attached files with clear filenames.", ko:"첨부 파일 이름을 명확히 정리했어요."},
+    {en:"I used bullets to highlight actions.", ko:"할 일을 강조하려 글머리표를 사용했어요."},
+    {en:"I asked one question per email.", ko:"메일당 질문은 하나만 담았어요."},
+    {en:"I read everything once before sending.", ko:"보내기 전에는 반드시 한 번 더 읽었어요."},
+    {en:"I avoided CC overload and kept it lean.", ko:"과한 참조를 피하고 꼭 필요한 사람만 포함했어요."},
+    {en:"I thanked myself for not checking too often.", ko:"너무 자주 확인하지 않은 나에게 고마웠어요."},
+    {en:"I filed important mails into simple folders.", ko:"중요 메일은 단순한 폴더로 분류했어요."},
+    {en:"I flagged two messages to revisit later.", ko:"나중에 볼 메일 두 개를 플래그했어요."},
+    {en:"I wrote with kindness, not urgency.", ko:"급함보다 배려를 담아 썼어요."},
+    {en:"I ended with a clear next step.", ko:"다음 행동을 분명히 적고 마무리했어요."},
+    {en:"I closed the tab and moved on.", ko:"메일 탭을 닫고 다음 일로 넘어갔어요."},
+  ],
+  "Team Meeting": [
+    {en:"I joined on time with notes ready.", ko:"메모를 준비해 정시에 참여했어요."},
+    {en:"I opened with outcomes, not updates.", ko:"상세 업데이트보다 결괏값부터 공유했어요."},
+    {en:"I asked one clarifying question.", ko:"핵심을 묻는 질문을 하나 던졌어요."},
+    {en:"I captured decisions in a shared doc.", ko:"결정 사항을 공동 문서에 정리했어요."},
+    {en:"I kept side topics for later.", ko:"곁다리 주제는 나중으로 미뤘어요."},
+    {en:"I summarized action items with owners.", ko:"할 일과 담당자를 요약했어요."},
+    {en:"I watched the time and moved us along.", ko:"시간을 확인하며 흐름을 이끌었어요."},
+    {en:"I invited quieter voices to speak.", ko:"말이 적은 사람에게 발언 기회를 드렸어요."},
+    {en:"I parked unresolved issues properly.", ko:"미해결 이슈는 파킹리스트에 기록했어요."},
+    {en:"I checked alignment before closing.", ko:"끝내기 전 정렬 상태를 확인했어요."},
+    {en:"I avoided interruptions and listened fully.", ko:"말을 끊지 않고 끝까지 들었어요."},
+    {en:"I used visuals to keep things clear.", ko:"시각 자료로 이해를 도왔어요."},
+    {en:"I praised small wins in public.", ko:"작은 성과를 공개적으로 칭찬했어요."},
+    {en:"I took next steps within 24 hours.", ko:"24시간 내 다음 스텝을 실행하기로 했어요."},
+    {en:"I kept the meeting within the agenda.", ko:"의제 범위 안에서 회의를 진행했어요."},
+    {en:"I asked 'What does good look like?' once.", ko:"‘좋음의 기준은?’을 한 번 물었어요."},
+    {en:"I reduced recurring topics with a doc.", ko:"반복 논의는 문서로 압축했어요."},
+    {en:"I ended five minutes early for breathing room.", ko:"여유를 위해 5분 일찍 마쳤어요."},
+    {en:"I thanked everyone for focus and effort.", ko:"집중과 노력을 고맙게 생각했어요."},
+    {en:"I shared minutes right after the call.", ko:"통화 직후 회의록을 공유했어요."},
+    {en:"I left with energy, not confusion.", ko:"혼란이 아닌 에너지를 얻고 나왔어요."},
+  ],
+  "Project Update": [
+    {en:"I wrote a brief status with traffic-light colors.", ko:"신호등 색으로 간단한 상태 보고를 작성했어요."},
+    {en:"I highlighted risks with clear owners.", ko:"리스크와 담당자를 명확히 표시했어요."},
+    {en:"I showed a before-and-after metric.", ko:"지표의 전후 비교를 보여줬어요."},
+    {en:"I cut scope that didn’t add value.", ko:"가치 없는 범위는 과감히 줄였어요."},
+    {en:"I turned blockers into specific asks.", ko:"막힘을 구체적 요청으로 바꿨어요."},
+    {en:"I linked to the latest design and spec.", ko:"최신 디자인과 스펙 링크를 첨부했어요."},
+    {en:"I called out what’s shipped this week.", ko:"이번 주 출시 항목을 명시했어요."},
+    {en:"I gave a realistic next milestone date.", ko:"현실적인 다음 마일스톤 일정을 제시했어요."},
+    {en:"I tagged reviewers for fast feedback.", ko:"빠른 피드백을 위해 리뷰어를 태그했어요."},
+    {en:"I noted any dependency changes.", ko:"의존성 변경 사항을 정리했어요."},
+    {en:"I celebrated a contributor by name.", ko:"기여자를 이름으로 칭찬했어요."},
+    {en:"I clarified what ‘done’ means this phase.", ko:"이번 단계의 ‘완료’ 정의를 명확히 했어요."},
+    {en:"I added a simple burndown snapshot.", ko:"간단한 번다운 스냅샷을 덧붙였어요."},
+    {en:"I aligned tasks with the roadmap.", ko:"작업을 로드맵과 정렬했어요."},
+    {en:"I trimmed jargon and wrote plainly.", ko:"전문 용어를 줄이고 평이하게 썼어요."},
+    {en:"I kept the update under two minutes.", ko:"2분 내로 발표를 마쳤어요."},
+    {en:"I invited questions and recorded them.", ko:"질문을 받아 기록해 두었어요."},
+    {en:"I set a check-in for next week.", ko:"다음 주 점검 일정을 잡았어요."},
+    {en:"I closed with one clear call to action.", ko:"마지막에 명확한 행동 요청을 남겼어요."},
+    {en:"I shared the doc link with viewers.", ko:"문서 링크를 공유 권한과 함께 보냈어요."},
+    {en:"I felt progress, not just motion.", ko:"움직임이 아닌 진전을 느꼈어요."},
+  ],
+  "Lunch Out": [
+    {en:"I chose a balanced bowl with veggies.", ko:"채소가 많은 균형 잡힌 볼을 골랐어요."},
+    {en:"I asked for less sauce and more greens.", ko:"소스는 적게, 채소는 더 달라고 했어요."},
+    {en:"I drank water before ordering.", ko:"주문 전에 물을 먼저 마셨어요."},
+    {en:"I shared a side so we didn’t overeat.", ko:"과식을 피하려고 사이드를 나눠 먹었어요."},
+    {en:"I tried a place I’d saved last week.", ko:"지난주 저장해둔 식당을 시도했어요."},
+    {en:"I put my phone away to enjoy the meal.", ko:"식사에 집중하려 폰을 치워두었어요."},
+    {en:"I asked about allergens just in case.", ko:"혹시 몰라 알레르기를 확인했어요."},
+    {en:"I tipped with a thank-you and a smile.", ko:"감사 인사와 함께 팁을 남겼어요."},
+    {en:"I kept the lunch under an hour.", ko:"점심 시간을 한 시간 이내로 지켰어요."},
+    {en:"I walked back to help digestion.", ko:"소화를 돕려고 걸어서 돌아왔어요."},
+    {en:"I took a photo for my food log.", ko:"식단 기록을 위해 사진을 찍었어요."},
+    {en:"I avoided heavy drinks in the afternoon.", ko:"오후를 위해 탄산은 피했어요."},
+    {en:"I enjoyed a small dessert to finish.", ko:"작은 디저트로 깔끔히 마무리했어요."},
+    {en:"I thanked the staff for quick service.", ko:"빠른 응대에 감사 인사를 전했어요."},
+    {en:"I tried to savor every bite.", ko:"한 입 한 입 음미하려고 했어요."},
+    {en:"I split the bill fairly and easily.", ko:"계산은 깔끔하게 나눴어요."},
+    {en:"I noted what I’d order again.", ko:"다음에 또 먹을 메뉴를 메모했어요."},
+    {en:"I kept my pace slow and relaxed.", ko:"천천히, 여유를 두고 먹었어요."},
+    {en:"I left room for an afternoon coffee.", ko:"오후 커피를 위해 여지를 남겼어요."},
+    {en:"I returned to work refreshed.", ko:"상쾌한 기분으로 자리로 돌아왔어요."},
+    {en:"I felt grateful for good company.", ko:"좋은 동행에 고마웠어요."},
+  ],
+  "Groceries": [
+    {en:"I checked the fridge and made a short list.", ko:"냉장고를 확인하고 짧은 리스트를 만들었어요."},
+    {en:"I chose seasonal produce first.", ko:"제철 농산물을 먼저 담았어요."},
+    {en:"I compared unit prices before deciding.", ko:"단가를 비교하고 선택했어요."},
+    {en:"I picked whole grains over snacks.", ko:"과자보다 통곡물을 고집했어요."},
+    {en:"I avoided shopping when hungry.", ko:"배고플 때 장보는 걸 피했어요."},
+    {en:"I brought a reusable bag from home.", ko:"집에서 가져온 장바구니를 사용했어요."},
+    {en:"I read labels for sugar and salt.", ko:"당·나트륨 표기를 확인했어요."},
+    {en:"I bought just enough for the week.", ko:"일주일치만 적당히 샀어요."},
+    {en:"I restocked basics like eggs and milk.", ko:"달걀과 우유 같은 기본 식재료를 채웠어요."},
+    {en:"I added fresh herbs to lift flavors.", ko:"향신채를 넣어 풍미를 살리려 했어요."},
+    {en:"I grabbed a backup for busy days.", ko:"바쁜 날을 위한 예비 식품도 챙겼어요."},
+    {en:"I avoided plastic where possible.", ko:"가능한 한 플라스틱을 줄였어요."},
+    {en:"I checked dates and rotated items.", ko:"유통기한을 확인하고 정리했어요."},
+    {en:"I used points and simple discounts.", ko:"포인트와 기본 할인만 활용했어요."},
+    {en:"I skipped impulse purchases at checkout.", ko:"계산대 앞 충동구매를 참았어요."},
+    {en:"I stored greens right after getting home.", ko:"집에 오자마자 채소를 보관했어요."},
+    {en:"I cleaned the crisper drawer quickly.", ko:"야채 칸을 재빨리 닦았어요."},
+    {en:"I planned two easy dinners from the haul.", ko:"장 본 재료로 쉬운 저녁 두 끼를 계획했어요."},
+    {en:"I put receipts away for tracking.", ko:"영수증은 기록을 위해 모아두었어요."},
+    {en:"I felt ready for a week of simple meals.", ko:"한 주 간단한 식사를 준비한 느낌이에요."},
+    {en:"I smiled at how organized the cart looked.", ko:"정돈된 카트를 보며 흐뭇했어요."},
+  ],
+  "Gym": [
+    {en:"I warmed up for five minutes to prevent injury.", ko:"부상을 막으려고 5분간 워밍업했어요."},
+    {en:"I focused on form over heavy weight.", ko:"무게보다 자세에 집중했어요."},
+    {en:"I logged sets and reps in my app.", ko:"세트와 반복을 앱에 기록했어요."},
+    {en:"I alternated push and pull movements.", ko:"푸시/풀을 번갈아 구성했어요."},
+    {en:"I kept rest periods consistent.", ko:"휴식 시간을 일정하게 유지했어요."},
+    {en:"I added one small progression today.", ko:"오늘은 작은 진전을 하나 추가했어요."},
+    {en:"I hydrated between sets.", ko:"세트 사이에 수분을 보충했어요."},
+    {en:"I wiped down equipment after use.", ko:"사용한 기구는 바로 닦았어요."},
+    {en:"I ended with a light cooldown.", ko:"마무리는 가벼운 쿨다운으로 했어요."},
+    {en:"I stretched tight hips and hamstrings.", ko:"뻣뻣한 둔근과 햄스트링을 풀었어요."},
+    {en:"I avoided comparing myself to others.", ko:"다른 사람과 비교하지 않으려 했어요."},
+    {en:"I kept my phone on do-not-disturb.", ko:"방해 금지 모드로 집중했어요."},
+    {en:"I noted what felt stronger today.", ko:"오늘 강해진 부분을 기록했어요."},
+    {en:"I lowered volume when form broke down.", ko:"자세가 무너지면 볼륨을 줄였어요."},
+    {en:"I chose music that kept me moving.", ko:"움직임을 돕는 음악을 골랐어요."},
+    {en:"I respected others’ space and time.", ko:"다른 사람의 공간과 시간을 존중했어요."},
+    {en:"I left with steady energy, not exhaustion.", ko:"탈진이 아닌 안정된 에너지로 나왔어요."},
+    {en:"I ate protein within an hour.", ko:"한 시간 안에 단백질을 섭취했어요."},
+    {en:"I updated tomorrow’s plan briefly.", ko:"내일 계획을 간단히 수정했어요."},
+    {en:"I thanked my body for showing up.", ko:"운동한 내 몸에 감사했어요."},
+    {en:"I reminded myself: consistency beats intensity.", ko:"일관성이 강도를 이긴다고 되새겼어요."},
+  ],
+  "Evening Walk": [
+    {en:"I walked a quiet route to unwind.", ko:"마음을 풀기 위해 조용한 길을 걸었어요."},
+    {en:"I left my headphones at home tonight.", ko:"오늘 밤은 이어폰을 집에 두고 나왔어요."},
+    {en:"I watched the sky change colors.", ko:"변해가는 하늘빛을 바라봤어요."},
+    {en:"I kept a steady, easy pace.", ko:"균일하고 편한 속도로 걸었어요."},
+    {en:"I greeted a neighbor with a smile.", ko:"이웃에게 미소로 인사했어요."},
+    {en:"I noticed a new flower by the path.", ko:"길가에 새로 핀 꽃을 발견했어요."},
+    {en:"I stretched my back at a bench.", ko:"벤치에서 등을 가볍게 늘렸어요."},
+    {en:"I counted my breaths to slow my mind.", ko:"호흡을 세며 마음을 느리게 했어요."},
+    {en:"I avoided bright screens after returning.", ko:"돌아와서는 밝은 화면을 피했어요."},
+    {en:"I drank warm tea instead of a late snack.", ko:"야식 대신 따뜻한 차를 마셨어요."},
+    {en:"I tracked steps just out of curiosity.", ko:"호기심으로 걸음 수만 확인했어요."},
+    {en:"I kept the walk around twenty minutes.", ko:"산책은 20분 정도로 유지했어요."},
+    {en:"I listened to crickets and city sounds.", ko:"귀뚜라미와 도시 소리를 함께 들었어요."},
+    {en:"I felt tension melt from my shoulders.", ko:"어깨의 긴장이 스르르 풀렸어요."},
+    {en:"I waved to a friendly street cat.", ko:"친근한 길고양이에게 손을 흔들었어요."},
+    {en:"I took a different turn for variety.", ko:"변화를 주려고 다른 길로 꺾어 봤어요."},
+    {en:"I noticed my posture getting taller.", ko:"자세가 한층 곧아진 걸 느꼈어요."},
+    {en:"I ended the walk with gratitude.", ko:"감사한 마음으로 산책을 마쳤어요."},
+    {en:"I planned a slightly longer walk tomorrow.", ko:"내일은 조금 더 길게 걸어보려 해요."},
+    {en:"I slept better after a calm stroll.", ko:"차분한 산책 덕분에 더 잘 잤어요."},
+    {en:"I told myself, 'Evening resets the day.'", ko:"‘저녁 산책이 하루를 리셋해.’라고 생각했어요."},
+  ],
+  "Streaming Show": [
+    {en:"I picked one episode instead of binging.", ko:"정주행 대신 한 편만 보려고 골랐어요."},
+    {en:"I turned on subtitles to catch details.", ko:"디테일을 잡으려고 자막을 켰어요."},
+    {en:"I paused to refill water, not snacks.", ko:"간식 대신 물을 채우려 잠시 멈췄어요."},
+    {en:"I noted a quote I really liked.", ko:"마음에 든 대사를 메모했어요."},
+    {en:"I avoided spoilers and stayed present.", ko:"스포일러를 피하고 현재 장면에 집중했어요."},
+    {en:"I lowered brightness to rest my eyes.", ko:"눈을 위해 밝기를 낮췄어요."},
+    {en:"I stopped auto-play after the credits.", ko:"크레딧 후 자동 재생을 끄고 멈췄어요."},
+    {en:"I recommended the show to one friend.", ko:"친구 한 명에게 작품을 추천했어요."},
+    {en:"I skipped scenes that felt too heavy.", ko:"너무 무거운 장면은 건너뛰었어요."},
+    {en:"I stretched during a slow scene.", ko:"느린 장면에 가벼운 스트레칭을 했어요."},
+    {en:"I compared it to the book briefly.", ko:"원작 책과 잠깐 비교해 봤어요."},
+    {en:"I checked the director’s other works.", ko:"감독의 다른 작품도 찾아봤어요."},
+    {en:"I kept the volume low at night.", ko:"밤에는 볼륨을 낮게 유지했어요."},
+    {en:"I stopped before it got too late.", ko:"너무 늦어지기 전에 끄고 쉬었어요."},
+    {en:"I cleaned up the sofa and blanket.", ko:"소파와 담요를 정돈했어요."},
+    {en:"I rated the episode for my log.", ko:"기록을 위해 에피소드를 별점 매겼어요."},
+    {en:"I reflected on the theme afterward.", ko:"끝나고 주제를 잠시 곱씹었어요."},
+    {en:"I didn’t snack mindlessly this time.", ko:"이번엔 무념무상 간식을 피했어요."},
+    {en:"I decided what to watch next time.", ko:"다음에 볼 작품을 미리 정했어요."},
+    {en:"I shut the screen and chose to read.", ko:"화면을 끄고 독서를 선택했어요."},
+    {en:"I went to bed on time after one show.", ko:"한 편만 보고 제시간에 잠자리에 들었어요."},
+  ],
+  "Weekend Plan": [
+    {en:"I listed one fun and one restful activity.", ko:"재미있는 일 하나, 쉬는 일 하나를 적었어요."},
+    {en:"I set a budget for the outing.", ko:"외출 예산을 간단히 정했어요."},
+    {en:"I checked the weather and backups.", ko:"날씨와 대안을 확인했어요."},
+    {en:"I booked a time slot where needed.", ko:"필요한 곳은 시간을 예약했어요."},
+    {en:"I kept the plan light to avoid stress.", ko:"스트레스를 줄이려 일정을 가볍게 잡았어요."},
+    {en:"I included a short nature walk.", ko:"짧은 자연 산책을 포함했어요."},
+    {en:"I picked one place to try new food.", ko:"새로운 음식을 맛볼 곳을 정했어요."},
+    {en:"I left space for doing nothing.", ko:"아무것도 하지 않는 시간도 남겨뒀어요."},
+    {en:"I planned a small home project.", ko:"집에서 할 작은 프로젝트도 계획했어요."},
+    {en:"I set a time to call a friend.", ko:"친구에게 전화할 시간을 잡았어요."},
+    {en:"I checked transit to avoid traffic.", ko:"교통 상황을 확인해 막힘을 피하려 했어요."},
+    {en:"I chose a book to finish this weekend.", ko:"이번 주말에 끝낼 책을 골랐어요."},
+    {en:"I planned a simple family meal.", ko:"가족과 먹을 간단한 식사를 계획했어요."},
+    {en:"I prepared a picnic option just in case.", ko:"피크닉 대안도 가볍게 준비했어요."},
+    {en:"I set a time to clean a small corner.", ko:"집 한 구석을 정리할 시간을 정했어요."},
+    {en:"I picked a music playlist to match the mood.", ko:"분위기에 맞는 음악 플레이리스트를 골랐어요."},
+    {en:"I promised myself to take photos mindfully.", ko:"사진은 의식적으로 찍기로 했어요."},
+    {en:"I planned a budget-friendly treat.", ko:"지갑에 무리 없는 작은 선물을 계획했어요."},
+    {en:"I scheduled a proper bedtime on Sunday.", ko:"일요일엔 제시간에 잠자리에 들기로 했어요."},
+    {en:"I left Monday’s prep for Sunday evening.", ko:"월요일 준비는 일요일 저녁에 하기로 했어요."},
+    {en:"I felt excited but not overloaded.", ko:"들뜨되, 과하지 않게 준비됐어요."},
+  ],
+};
 
-/* ====== bank21(title) → TOPIC_BANKS 사용 ====== */
+/* ====== Pick bank (handcrafted first, then fallback) ====== */
 function bank21(title){
-  const override = TOPIC_BANKS[title];
-  if (Array.isArray(override) && override.length === 21) {
-    return override; // 완전 커스텀 21문장
-  }
-  // category 문자열이면 해당 전용/범용 세트 생성
-  const cat = (typeof override === 'string' && override) ? override : 'generic';
-  return build21ByCategory(cat, title);
+  const set = HANDCRAFTED_21[title];
+  return Array.isArray(set) && set.length===21 ? set : bank21_fallback(title);
 }
 
 /* ====== Per-day state ====== */
@@ -503,8 +541,8 @@ function speakOnce(text){ return new Promise(async (resolve)=>{ if(!('speechSynt
 async function speakQueue(arr,onStart,onEnd){ try{ onStart&&onStart(); for(const s of arr){ await speakOnce(s); } } finally{ onEnd&&onEnd(); } }
 function speak(text){ return speakQueue([text]); }
 
-/* ====== STT & Scoring ====== */
-function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>{/* 일시 오류는 onend에서 복구 */}; rec.onend=()=>onEnd&&onEnd(); return rec; }
+/* ====== STT & Scoring (원본 유지) ====== */
+function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>{}; rec.onend=()=>onEnd&&onEnd(); return rec; }
 function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) d[i][0]=i; for(let j=0;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
 function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
 function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0; const dist=levenshtein(A,B); const max=Math.max(A.length,B.length)||1; return Math.max(0, Math.round((1-dist/max)*100)); }
@@ -533,7 +571,7 @@ elRate.textContent=(user.ttsRate||1).toFixed(1)+'x';
 document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 
-/* ====== Render Today (fixed 21 bank, 3 lines per view) ====== */
+/* ====== Render Today (3 lines per view, 7 clicks → wrap) ====== */
 function renderToday(){
   const day=getTodayDay(); const state=ensureDayState(day);
   const title=TITLES[day-1]; const bank = bank21(title);
@@ -562,7 +600,6 @@ function renderToday(){
     const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px';
     const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent='';
 
-    // 연습: 반드시 사용자가 중지 눌러야 종료(자동 종료시 재시작)
     let rec=null, recActive=false, hypAccum='';
     function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…(연습)'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기(연습)'; } }
     function startLineRec(){
@@ -606,7 +643,7 @@ function renderToday(){
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(점수 반영)';
-  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식을 지원하지 않습니다.'; }
+  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식을 제한됩니다.'; }
   btnRecAll.onclick=()=> practiceReciteOneShot_final(lines.map(x=>x.en), btnRecAll);
   allRow.appendChild(btnRecAll);
 
@@ -644,7 +681,7 @@ function markDone(day,avg){
   renderChallenge100(); renderHistory();
 }
 
-/* ====== 3문장 연속 말하기(점수 반영) ====== */
+/* ====== 3문장 연속 말하기 패널 ====== */
 function concatenateLines(lines){ return lines.join(' '); }
 function practiceReciteOneShot_final(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -691,137 +728,4 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   function resetStartUI(){ btnStart.classList.remove('rec'); btnStart.textContent='● 말하기 시작'; btnStart.disabled=false; }
   function startRecognizer(){
     rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
-    if(rec){ try{ rec.start(); }catch(_){ canStart=true; resetStartUI(); btnStop.disabled=true; toast('마이크 시작 실패. 다시 시도해 주세요.'); } }
-    else { canStart=true; resetStartUI(); btnStop.disabled=true; }
-  }
-
-  function onResult(e){
-    for (let i=e.resultIndex;i<e.results.length;i++){
-      const r=e.results[i];
-      if(r.isFinal) finalText += (finalText?' ':'') + r[0].transcript;
-    }
-  }
-  function onEnd(){
-    if(recActive){ try{ rec=null; setTimeout(startRecognizer, 200); }catch(_){}; return; }
-    const refAll = concatenateLines(lines);
-    const sc = scoreSentence(refAll, finalText);
-    const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
-
-    lastScore = isNaN(sc)? null : sc; lastFb = fb.join(' · ');
-    sumScore.textContent = (lastScore==null)? '—' : (lastScore + '%');
-    sumFb.textContent = lastFb; resultBox.style.display = '';
-
-    btnStop.disabled = true; btnStop.textContent = '중지됨';
-    resetStartUI(); rec=null; setTimeout(()=>{ canStart=true; }, 200);
-  }
-
-  btnStart.onclick = ()=>{
-    if(!canStart || recActive) return;
-    canStart=false; finalText='';
-    recActive=true;
-    if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
-    btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
-    btnStop.disabled=false; btnStop.textContent='■ 중지';
-    setTimeout(startRecognizer, 150);
-    toast('한 번에 3문장을 말해 보세요…');
-  };
-
-  btnStop.onclick = ()=>{
-    if(!recActive) return;
-    recActive=false;
-    if(rec){ try{ rec.stop(); }catch(_){} }
-    btnStop.disabled = true; btnStop.textContent = '중지됨';
-  };
-
-  box.querySelector('#btnClosePanel').onclick = ()=>{
-    try{ if(recActive && rec){ recActive=false; rec.abort(); } }catch(_){}
-    document.body.removeChild(wrap);
-    restoreTrigger();
-    if(lastScore!=null){
-      const day=getTodayDay(); const d=ensureDayState(day);
-      d.comboScore = lastScore; saveProg(prog);
-      updateProgress();
-      toast(`점수 ${lastScore}% 반영 완료`);
-    } else {
-      toast('점수 없이 닫았습니다.');
-    }
-  };
-}
-
-/* ====== 100-Day Calendar & History ====== */
-function renderChallenge100(){
-  const grid=document.getElementById('challenge100'); grid.innerHTML='';
-  const cur=getTodayDay();
-  for(let i=1;i<=100;i++){
-    const cell=document.createElement('div'); cell.className='day'; cell.textContent=i;
-    const k='Day'+i; if(prog[k] && prog[k].done){ cell.classList.add('done'); cell.style.borderColor='#3b82f6'; }
-    if(i===cur){ cell.style.outline='2px solid #5b8cff'; cell.style.color='#e8eefc'; }
-    cell.title=k+(i===cur?' • today':'');
-    cell.onclick=()=>{ prog._currentDay=i; saveProg(prog); tabs.forEach(b=>{ if(b.dataset.view==='home'){ b.click(); }}); renderToday(); };
-    grid.appendChild(cell);
-  }
-}
-
-function renderHistory(){
-  const box=document.getElementById('history');
-  let list = Array.isArray(prog._history) ? [...prog._history] : [];
-  if (!list.length){
-    list = Object.entries(prog)
-      .filter(([k,v])=>/^Day\d+$/.test(k) && v && typeof v.comboScore==='number')
-      .map(([k,v])=>({ day: parseInt(k.slice(3)), date: '', title: TITLES[parseInt(k.slice(3))-1], avg: v.comboScore }));
-  }
-  list.sort((a,b)=> a.day - b.day);
-  if(!list.length){ box.innerHTML='<div class="small">아직 기록이 없습니다.</div>'; return; }
-  const frag=document.createDocumentFragment();
-  list.forEach(item=>{
-    const div=document.createElement('div'); div.className='line';
-    const dateTxt = item.date ? ` <span class="small">(${item.date})</span>` : '';
-    div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
-      <b>Day ${item.day} — ${item.title}${dateTxt}</b><span class="score">${item.avg}%</span></div>`;
-    frag.appendChild(div);
-  });
-  box.innerHTML=''; box.appendChild(frag);
-}
-
-/* ====== Shortcuts ====== */
-btnRetry.onclick=()=>{
-  const day=getTodayDay(); const k='Day'+day; const st=ensureDayState(day);
-  st.comboScore=null; st.done=false;
-  st.bankOffset = ((st.bankOffset||0) + 3) % 21;
-  saveProg(prog);
-  renderToday(); updateProgress();
-  toast('🔁 다음 3문장으로 바꿨어요.');
-};
-btnReset.onclick=()=>{ if(!confirm('정말 전체 데이터를 초기화할까요? (취소 불가)')) return;
-  localStorage.removeItem(LS_PROGRESS); prog=loadProg();
-  prog._startedAt=todayKey(); prog._currentDay=1; prog._lastDate=todayKey(); prog._history=[];
-  saveProg(prog);
-  renderToday(); renderChallenge100(); renderHistory(); updateProgress(); toast('🧹 모든 데이터가 초기화됐어요.');
-};
-
-/* ====== Auto Day Rollover (KST) ====== */
-function autoDayRolloverTick(){
-  const nowKey = todayKey();
-  if(prog._lastDate !== nowKey){
-    prog._lastDate = nowKey;
-    prog._currentDay = computeDayFromStart();
-    const k='Day'+prog._currentDay;
-    if(!prog[k]) prog[k]={ comboScore:null, done:false, bankOffset:0 };
-    saveProg(prog);
-    renderToday(); renderChallenge100(); updateProgress();
-    toast('📅 새로운 날이 시작되어 주제를 바꿨어요!');
-  }
-}
-setInterval(autoDayRolloverTick, 60*1000);
-autoDayRolloverTick();
-
-/* ====== PWA ====== */
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
-
-/* ====== Boot ====== */
-function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
-function boot(){ initHeaderKPI(); renderToday(); renderChallenge100(); updateProgress(); }
-boot();
-</script>
-</body>
-</html>
+    if(rec){ try{ rec.start(); }catch(_){ can
