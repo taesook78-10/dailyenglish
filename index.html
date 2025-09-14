@@ -1,10 +1,33 @@
 <!DOCTYPE html>
 <html lang="ko">
-<script src="./topics.js"></script>
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Daily 3 Lines — TTS · STT · Score · 100-Day</title>
+  <title>Daily 3 Lines </title>
+  <script src="./topics.js?v=20250914"></script>
+  <script>
+    (function(){
+      if (!Array.isArray(window.TOPICS)) {
+        console.error("[topics] window.TOPICS가 없습니다. topics.js를 먼저 로드했는지 확인하세요.");
+        return;
+      }
+      window.TITLES = window.TOPICS.map(t => t.topic);
+      const banks = {};
+      for (const item of window.TOPICS) {
+        const arr = Array.isArray(item.sentences) ? item.sentences : [];
+        banks[item.topic] = arr.map(s => {
+          if (typeof s === "string") return { en: s, ko: "" };
+          return { en: (s && s.en) ? String(s.en) : "", ko: (s && s.ko) ? String(s.ko) : "" };
+        }).slice(0, 21);
+        while (banks[item.topic].length < 21) {
+          const i = banks[item.topic].length + 1;
+          banks[item.topic].push({ en: `Placeholder sentence ${i} for ${item.topic}.`, ko: "" });
+        }
+      }
+      window.TOPIC_BANKS = banks;
+    })();
+  </script>
   <meta name="theme-color" content="#0b1020" />
   <link rel="manifest" href="/dailyenglish/manifest.webmanifest?v=10">
   <link rel="apple-touch-icon" href="/dailyenglish/icon-180.png">
