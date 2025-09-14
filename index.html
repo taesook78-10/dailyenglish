@@ -46,6 +46,7 @@
   .line p{margin:0 0 8px;font-size:18px;line-height:1.5}
   .line p.ko{margin:0 0 10px; font-size:15.5px; line-height:1.6; color:#cbd4f5}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
   .btn{
     appearance:none;border:none;border-radius:12px;padding:10px 14px;
     background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:44px;
@@ -58,19 +59,27 @@
   .btn.warn{background:#3a2a0e;border-color:#9f6b18}
   .btn.ghost{background:transparent;border-color:#2b3f7a}
   .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
+
   .chip{display:inline-flex; align-items:center; gap:8px; padding:8px 12px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px}
   .chip::before{content:''; width:8px; height:8px; border-radius:50%; background:linear-gradient(180deg,#a7baff,#5b8cff); box-shadow:0 0 0 2px rgba(91,140,255,.15);}
   .score{font-weight:900}
+
   .meter{height:12px;background:#0e1330;border-radius:999px;border:1px solid var(--ring);overflow:hidden}
   .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
+
   .kpi{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
   .calendar{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
   .day{aspect-ratio:1/1;border:1px solid #2d3d72;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0e1430;color:#c9d4ff;font-weight:700; font-size:14px}
   @media (max-width:520px){ .calendar{grid-template-columns:repeat(7,1fr)} .day{font-size:13px} .line p{font-size:16px} .title{font-size:22px}}
+
   .toast{position:fixed;inset:auto 0 18px 0;display:flex;justify-content:center;pointer-events:none}
   .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
+
   .small{font-size:12px;color:#a7b3d6}
   .hint{font-size:12.5px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:10px 12px;border-radius:10px}
+
+  /* 연속 말하기 패널 */
   .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:9999;}
   .practice .box{width:min(720px,94vw); max-height:92vh; overflow:auto; background:#101733; border:1px solid var(--ring); border-radius:16px; padding:16px; box-shadow:var(--shadow);}
   .practice .box h3{margin:0 0 12px; font-size:18px;}
@@ -113,6 +122,7 @@
             <div class="subtitle">오늘의 제목 (Day <span id="dayNum">1</span>)</div>
             <div class="title" id="dayTitle">—</div>
           </div>
+          <!-- 점수 칩은 이 카드에서 제거(요청에 따라 오른쪽 ‘오늘의 목표’ 카드 헤더로 이동) -->
         </div>
         <div class="body" id="lines"></div>
       </div>
@@ -120,6 +130,7 @@
       <div class="card">
         <div class="hd">
           <h2>오늘의 목표</h2>
+          <!-- 오른쪽에 '80점 이상 성공' 먼저, 그 오른쪽에 점수 칩 배치 -->
           <div class="kpi">
             <div class="chip">80점 이상 성공</div>
             <div class="chip">점수: <span class="score" id="avgScore">—</span></div>
@@ -180,13 +191,14 @@ function computeDayFromStart(){
   return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1));
 }
 function getTodayDay(){
+  // _currentDay는 자동으로 새날에 업데이트됨(아래 autoDayRollover 참고)
   const cur=prog._currentDay || computeDayFromStart();
   const d=Math.max(1,Math.min(100,cur));
   if(prog._currentDay!==d){ prog._currentDay=d; saveProg(prog); }
   return d;
 }
 
-/* ====== 100 Titles ====== */
+/* ====== Data (100 Titles) ====== */
 const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
   'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
   'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
@@ -200,8 +212,11 @@ const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeti
   'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
 ];
 
-/* ====== Fallback 21-line template (kept from the original) ====== */
-function bank21_fallback(title){
+/* ====== Fixed 21-line bank per topic (EN/KR) ======
+   - 템플릿이지만 "고정 21문장"으로 취급됩니다(랜덤 X).
+   - title을 소문자로 끼워 넣어 자연스러운 회화 문장 세트 21개.
+*/
+function bank21(title){
   const t = title.toLowerCase();
   return [
     {en:`I spent some time on ${t} today.`, ko:`오늘 ${t}에 시간을 좀 썼어요.`},
@@ -228,296 +243,6 @@ function bank21_fallback(title){
   ];
 }
 
-/* ====== Handcrafted 21-line sets per topic (EN/KR) ======
-   - 수작업 세트가 존재하면 이것을 사용하고,
-   - 없으면 위의 fallback으로 자동 대체됩니다.
-   - 현재 10개 주제(예시) 수작업 완성. 이후 확장 가능.
-*/
-const HANDCRAFTED_21 = {
-  "Morning Routine": [
-    {en:"I woke up to a gentle alarm and didn’t hit snooze.", ko:"잔잔한 알람 소리에 일어나고, 스누즈는 누르지 않았어요."},
-    {en:"I drank a glass of warm water before anything else.", ko:"무엇보다 먼저 미지근한 물 한 잔을 마셨어요."},
-    {en:"I stretched my neck and shoulders for a minute.", ko:"목과 어깨를 1분 정도 가볍게 스트레칭했어요."},
-    {en:"I made my bed to start the day tidy.", ko:"정돈된 하루를 위해 침대를 먼저 정리했어요."},
-    {en:"I opened the window and let the fresh air in.", ko:"창문을 열어 상쾌한 공기를 들였어요."},
-    {en:"I brewed a simple coffee and enjoyed the aroma.", ko:"간단히 커피를 내려 향을 즐겼어요."},
-    {en:"I planned three priorities in my notebook.", ko:"노트에 오늘의 우선순위 세 가지를 적었어요."},
-    {en:"I did a five-minute breathing exercise.", ko:"5분 호흡 연습으로 마음을 가다듬었어요."},
-    {en:"I kept breakfast light but balanced.", ko:"아침은 가볍지만 균형 있게 챙겼어요."},
-    {en:"I checked the weather and picked comfortable clothes.", ko:"날씨를 확인하고 편한 옷을 골랐어요."},
-    {en:"I left the phone face down to avoid distractions.", ko:"산만함을 막으려고 폰을 화면 아래로 두었어요."},
-    {en:"I read a short paragraph to wake my brain up.", ko:"뇌를 깨우려고 짧은 글을 읽었어요."},
-    {en:"I watered my plant before heading out.", ko:"나가기 전에 화분에 물을 줬어요."},
-    {en:"I packed my bag the night before, so it was easy.", ko:"전날 가방을 챙겨둬서 준비가 수월했어요."},
-    {en:"I left home five minutes earlier than usual.", ko:"평소보다 5분 일찍 집을 나섰어요."},
-    {en:"I reminded myself to be kind and patient today.", ko:"오늘은 친절과 인내를 기억하자고 다짐했어요."},
-    {en:"I kept my morning routine simple and calm.", ko:"아침 루틴을 단순하고 차분하게 유지했어요."},
-    {en:"I skipped scrolling and saved time.", ko:"무의식적 스크롤을 건너뛰어 시간을 아꼈어요."},
-    {en:"I took a deep breath before locking the door.", ko:"문을 잠그기 전에 깊게 한 번 숨을 들이쉬었어요."},
-    {en:"I felt ready to start the day on purpose.", ko:"의도 있는 시작으로 하루를 맞이할 준비가 되었어요."},
-    {en:"I told myself, 'One small win at a time.'", ko:"‘작은 성취 하나씩’이라고 스스로에게 말했어요."},
-  ],
-  "Commuting": [
-    {en:"I caught my usual bus without rushing.", ko:"허둥대지 않고 평소 타던 버스를 잡았어요."},
-    {en:"I used the ride to review my schedule.", ko:"이동 시간에 일정을 점검했어요."},
-    {en:"I listened to a short podcast episode.", ko:"짧은 팟캐스트를 한 편 들었어요."},
-    {en:"I stood near the door to get off smoothly.", ko:"내리기 편하게 문 근처에 섰어요."},
-    {en:"I offered my seat to someone who needed it.", ko:"자리 양보가 필요한 분께 자리를 내드렸어요."},
-    {en:"I practiced silent breathing when it got crowded.", ko:"혼잡할 때 조용히 호흡을 가다듬었어요."},
-    {en:"I avoided doom-scrolling and watched outside.", ko:"무의미한 스크롤을 피하고 창밖을 바라봤어요."},
-    {en:"I sent a quick update that I’d arrive on time.", ko:"정시에 도착한다고 간단히 알렸어요."},
-    {en:"I double-checked my stop—no surprises today.", ko:"내릴 정류장을 다시 확인해 실수 없었어요."},
-    {en:"I kept my bag zipped and close to me.", ko:"가방 지퍼를 잠그고 몸 가까이 뒀어요."},
-    {en:"I let a train pass to get a less crowded one.", ko:"덜 붐비는 열차를 타려고 한 대를 보냈어요."},
-    {en:"I stretched my calves while standing.", ko:"서 있는 동안 종아리를 스트레칭했어요."},
-    {en:"I smiled at a driver who waited for pedestrians.", ko:"보행자를 배려한 운전자에게 미소로 답했어요."},
-    {en:"I walked the last block to wake myself up.", ko:"마지막 한 블록은 걸으며 몸을 깨웠어요."},
-    {en:"I was mindful of my posture the whole time.", ko:"내내 자세를 의식하며 유지했어요."},
-    {en:"I arrived with a few minutes to spare.", ko:"여유 있게 몇 분 일찍 도착했어요."},
-    {en:"I thanked myself for a calm commute.", ko:"침착한 통근을 한 나에게 고마웠어요."},
-    {en:"I noticed a new café near the station.", ko:"역 근처 새 카페를 발견했어요."},
-    {en:"I kept ear volume low to protect hearing.", ko:"청력을 지키려고 볼륨을 낮게 유지했어요."},
-    {en:"I ended the ride feeling steady and clear.", ko:"안정되고 맑은 기분으로 이동을 마쳤어요."},
-    {en:"I said, 'That was smoother than yesterday.'", ko:"‘어제보다 한결 수월했어.’라고 생각했어요."},
-  ],
-  "Coffee Break": [
-    {en:"I chose a lighter roast for a gentle flavor.", ko:"부드러운 맛을 위해 라이트 로스트를 골랐어요."},
-    {en:"I tried not to add sugar this time.", ko:"이번에는 설탕을 넣지 않으려 노력했어요."},
-    {en:"I paired coffee with a handful of nuts.", ko:"견과 한 줌과 커피를 곁들였어요."},
-    {en:"I took three slow breaths before the first sip.", ko:"첫 모금 전에 천천히 세 번 숨을 쉬었어요."},
-    {en:"I chatted briefly with the barista.", ko:"바리스타와 짧게 대화를 나눴어요."},
-    {en:"I sat by the window for natural light.", ko:"창가 자리에 앉아 자연광을 즐겼어요."},
-    {en:"I kept the break to ten mindful minutes.", ko:"10분 정도의 온전한 휴식으로 제한했어요."},
-    {en:"I noticed hints of citrus in the coffee.", ko:"커피에서 시트러스 향을 느꼈어요."},
-    {en:"I skipped my phone and watched people pass by.", ko:"폰은 내려놓고 지나가는 사람들을 바라봤어요."},
-    {en:"I refilled my water to stay hydrated.", ko:"수분 보충을 위해 물도 채워둔 뒤였어요."},
-    {en:"I thanked the team by bringing back a cup.", ko:"동료에게 커피를 하나 사와 감사의 뜻을 전했어요."},
-    {en:"I cleaned the mug right after finishing.", ko:"다 마시고 바로 머그컵을 씻었어요."},
-    {en:"I avoided a second cup in the afternoon.", ko:"오후에는 두 번째 컵을 참았어요."},
-    {en:"I tried a new origin I hadn’t tasted before.", ko:"처음 마셔보는 원두를 시도했어요."},
-    {en:"I savored the warmth and slowed my pace.", ko:"따뜻함을 음미하며 속도를 늦췄어요."},
-    {en:"I kept the talk light and friendly.", ko:"대화는 가볍고 친근하게 유지했어요."},
-    {en:"I left the café feeling refreshed.", ko:"카페를 나올 때는 상쾌했어요."},
-    {en:"I reminded myself not to drink too late.", ko:"너무 늦게 마시지 않도록 스스로에게 상기했어요."},
-    {en:"I logged the taste notes in my journal.", ko:"맛 노트를 간단히 기록했어요."},
-    {en:"I enjoyed the small ritual of a clean pour.", ko:"깨끗한 푸어의 작은 의식을 즐겼어요."},
-    {en:"I said, 'That cup was just right.'", ko:"‘방금 그 한 잔, 딱 좋았어.’라고 생각했어요."},
-  ],
-  "Emails": [
-    {en:"I cleared the inbox to zero once today.", ko:"오늘 한 번은 인박스를 ‘0’으로 비웠어요."},
-    {en:"I answered the oldest message first.", ko:"가장 오래된 메일부터 답장했어요."},
-    {en:"I used clear subject lines with verbs.", ko:"동사가 보이는 명확한 제목을 썼어요."},
-    {en:"I kept each reply under five sentences.", ko:"답장은 다섯 문장 이내로 제한했어요."},
-    {en:"I turned long threads into quick calls.", ko:"길어진 스레드는 간단 통화로 전환했어요."},
-    {en:"I added deadlines instead of vague words.", ko:"애매한 표현 대신 마감일을 명시했어요."},
-    {en:"I thanked people for prompt follow-ups.", ko:"빠른 회신에 감사 인사를 전했어요."},
-    {en:"I archived newsletters after skimming.", ko:"뉴스레터는 훑어보고 보관 처리했어요."},
-    {en:"I unsubscribed from one noisy list.", ko:"시끄러운 구독 하나를 해지했어요."},
-    {en:"I delayed a message to send next morning.", ko:"메일 하나는 다음 날 아침 발송으로 예약했어요."},
-    {en:"I attached files with clear filenames.", ko:"첨부 파일 이름을 명확히 정리했어요."},
-    {en:"I used bullets to highlight actions.", ko:"할 일을 강조하려 글머리표를 사용했어요."},
-    {en:"I asked one question per email.", ko:"메일당 질문은 하나만 담았어요."},
-    {en:"I read everything once before sending.", ko:"보내기 전에는 반드시 한 번 더 읽었어요."},
-    {en:"I avoided CC overload and kept it lean.", ko:"과한 참조를 피하고 꼭 필요한 사람만 포함했어요."},
-    {en:"I thanked myself for not checking too often.", ko:"너무 자주 확인하지 않은 나에게 고마웠어요."},
-    {en:"I filed important mails into simple folders.", ko:"중요 메일은 단순한 폴더로 분류했어요."},
-    {en:"I flagged two messages to revisit later.", ko:"나중에 볼 메일 두 개를 플래그했어요."},
-    {en:"I wrote with kindness, not urgency.", ko:"급함보다 배려를 담아 썼어요."},
-    {en:"I ended with a clear next step.", ko:"다음 행동을 분명히 적고 마무리했어요."},
-    {en:"I closed the tab and moved on.", ko:"메일 탭을 닫고 다음 일로 넘어갔어요."},
-  ],
-  "Team Meeting": [
-    {en:"I joined on time with notes ready.", ko:"메모를 준비해 정시에 참여했어요."},
-    {en:"I opened with outcomes, not updates.", ko:"상세 업데이트보다 결괏값부터 공유했어요."},
-    {en:"I asked one clarifying question.", ko:"핵심을 묻는 질문을 하나 던졌어요."},
-    {en:"I captured decisions in a shared doc.", ko:"결정 사항을 공동 문서에 정리했어요."},
-    {en:"I kept side topics for later.", ko:"곁다리 주제는 나중으로 미뤘어요."},
-    {en:"I summarized action items with owners.", ko:"할 일과 담당자를 요약했어요."},
-    {en:"I watched the time and moved us along.", ko:"시간을 확인하며 흐름을 이끌었어요."},
-    {en:"I invited quieter voices to speak.", ko:"말이 적은 사람에게 발언 기회를 드렸어요."},
-    {en:"I parked unresolved issues properly.", ko:"미해결 이슈는 파킹리스트에 기록했어요."},
-    {en:"I checked alignment before closing.", ko:"끝내기 전 정렬 상태를 확인했어요."},
-    {en:"I avoided interruptions and listened fully.", ko:"말을 끊지 않고 끝까지 들었어요."},
-    {en:"I used visuals to keep things clear.", ko:"시각 자료로 이해를 도왔어요."},
-    {en:"I praised small wins in public.", ko:"작은 성과를 공개적으로 칭찬했어요."},
-    {en:"I took next steps within 24 hours.", ko:"24시간 내 다음 스텝을 실행하기로 했어요."},
-    {en:"I kept the meeting within the agenda.", ko:"의제 범위 안에서 회의를 진행했어요."},
-    {en:"I asked 'What does good look like?' once.", ko:"‘좋음의 기준은?’을 한 번 물었어요."},
-    {en:"I reduced recurring topics with a doc.", ko:"반복 논의는 문서로 압축했어요."},
-    {en:"I ended five minutes early for breathing room.", ko:"여유를 위해 5분 일찍 마쳤어요."},
-    {en:"I thanked everyone for focus and effort.", ko:"집중과 노력을 고맙게 생각했어요."},
-    {en:"I shared minutes right after the call.", ko:"통화 직후 회의록을 공유했어요."},
-    {en:"I left with energy, not confusion.", ko:"혼란이 아닌 에너지를 얻고 나왔어요."},
-  ],
-  "Project Update": [
-    {en:"I wrote a brief status with traffic-light colors.", ko:"신호등 색으로 간단한 상태 보고를 작성했어요."},
-    {en:"I highlighted risks with clear owners.", ko:"리스크와 담당자를 명확히 표시했어요."},
-    {en:"I showed a before-and-after metric.", ko:"지표의 전후 비교를 보여줬어요."},
-    {en:"I cut scope that didn’t add value.", ko:"가치 없는 범위는 과감히 줄였어요."},
-    {en:"I turned blockers into specific asks.", ko:"막힘을 구체적 요청으로 바꿨어요."},
-    {en:"I linked to the latest design and spec.", ko:"최신 디자인과 스펙 링크를 첨부했어요."},
-    {en:"I called out what’s shipped this week.", ko:"이번 주 출시 항목을 명시했어요."},
-    {en:"I gave a realistic next milestone date.", ko:"현실적인 다음 마일스톤 일정을 제시했어요."},
-    {en:"I tagged reviewers for fast feedback.", ko:"빠른 피드백을 위해 리뷰어를 태그했어요."},
-    {en:"I noted any dependency changes.", ko:"의존성 변경 사항을 정리했어요."},
-    {en:"I celebrated a contributor by name.", ko:"기여자를 이름으로 칭찬했어요."},
-    {en:"I clarified what ‘done’ means this phase.", ko:"이번 단계의 ‘완료’ 정의를 명확히 했어요."},
-    {en:"I added a simple burndown snapshot.", ko:"간단한 번다운 스냅샷을 덧붙였어요."},
-    {en:"I aligned tasks with the roadmap.", ko:"작업을 로드맵과 정렬했어요."},
-    {en:"I trimmed jargon and wrote plainly.", ko:"전문 용어를 줄이고 평이하게 썼어요."},
-    {en:"I kept the update under two minutes.", ko:"2분 내로 발표를 마쳤어요."},
-    {en:"I invited questions and recorded them.", ko:"질문을 받아 기록해 두었어요."},
-    {en:"I set a check-in for next week.", ko:"다음 주 점검 일정을 잡았어요."},
-    {en:"I closed with one clear call to action.", ko:"마지막에 명확한 행동 요청을 남겼어요."},
-    {en:"I shared the doc link with viewers.", ko:"문서 링크를 공유 권한과 함께 보냈어요."},
-    {en:"I felt progress, not just motion.", ko:"움직임이 아닌 진전을 느꼈어요."},
-  ],
-  "Lunch Out": [
-    {en:"I chose a balanced bowl with veggies.", ko:"채소가 많은 균형 잡힌 볼을 골랐어요."},
-    {en:"I asked for less sauce and more greens.", ko:"소스는 적게, 채소는 더 달라고 했어요."},
-    {en:"I drank water before ordering.", ko:"주문 전에 물을 먼저 마셨어요."},
-    {en:"I shared a side so we didn’t overeat.", ko:"과식을 피하려고 사이드를 나눠 먹었어요."},
-    {en:"I tried a place I’d saved last week.", ko:"지난주 저장해둔 식당을 시도했어요."},
-    {en:"I put my phone away to enjoy the meal.", ko:"식사에 집중하려 폰을 치워두었어요."},
-    {en:"I asked about allergens just in case.", ko:"혹시 몰라 알레르기를 확인했어요."},
-    {en:"I tipped with a thank-you and a smile.", ko:"감사 인사와 함께 팁을 남겼어요."},
-    {en:"I kept the lunch under an hour.", ko:"점심 시간을 한 시간 이내로 지켰어요."},
-    {en:"I walked back to help digestion.", ko:"소화를 돕려고 걸어서 돌아왔어요."},
-    {en:"I took a photo for my food log.", ko:"식단 기록을 위해 사진을 찍었어요."},
-    {en:"I avoided heavy drinks in the afternoon.", ko:"오후를 위해 탄산은 피했어요."},
-    {en:"I enjoyed a small dessert to finish.", ko:"작은 디저트로 깔끔히 마무리했어요."},
-    {en:"I thanked the staff for quick service.", ko:"빠른 응대에 감사 인사를 전했어요."},
-    {en:"I tried to savor every bite.", ko:"한 입 한 입 음미하려고 했어요."},
-    {en:"I split the bill fairly and easily.", ko:"계산은 깔끔하게 나눴어요."},
-    {en:"I noted what I’d order again.", ko:"다음에 또 먹을 메뉴를 메모했어요."},
-    {en:"I kept my pace slow and relaxed.", ko:"천천히, 여유를 두고 먹었어요."},
-    {en:"I left room for an afternoon coffee.", ko:"오후 커피를 위해 여지를 남겼어요."},
-    {en:"I returned to work refreshed.", ko:"상쾌한 기분으로 자리로 돌아왔어요."},
-    {en:"I felt grateful for good company.", ko:"좋은 동행에 고마웠어요."},
-  ],
-  "Groceries": [
-    {en:"I checked the fridge and made a short list.", ko:"냉장고를 확인하고 짧은 리스트를 만들었어요."},
-    {en:"I chose seasonal produce first.", ko:"제철 농산물을 먼저 담았어요."},
-    {en:"I compared unit prices before deciding.", ko:"단가를 비교하고 선택했어요."},
-    {en:"I picked whole grains over snacks.", ko:"과자보다 통곡물을 고집했어요."},
-    {en:"I avoided shopping when hungry.", ko:"배고플 때 장보는 걸 피했어요."},
-    {en:"I brought a reusable bag from home.", ko:"집에서 가져온 장바구니를 사용했어요."},
-    {en:"I read labels for sugar and salt.", ko:"당·나트륨 표기를 확인했어요."},
-    {en:"I bought just enough for the week.", ko:"일주일치만 적당히 샀어요."},
-    {en:"I restocked basics like eggs and milk.", ko:"달걀과 우유 같은 기본 식재료를 채웠어요."},
-    {en:"I added fresh herbs to lift flavors.", ko:"향신채를 넣어 풍미를 살리려 했어요."},
-    {en:"I grabbed a backup for busy days.", ko:"바쁜 날을 위한 예비 식품도 챙겼어요."},
-    {en:"I avoided plastic where possible.", ko:"가능한 한 플라스틱을 줄였어요."},
-    {en:"I checked dates and rotated items.", ko:"유통기한을 확인하고 정리했어요."},
-    {en:"I used points and simple discounts.", ko:"포인트와 기본 할인만 활용했어요."},
-    {en:"I skipped impulse purchases at checkout.", ko:"계산대 앞 충동구매를 참았어요."},
-    {en:"I stored greens right after getting home.", ko:"집에 오자마자 채소를 보관했어요."},
-    {en:"I cleaned the crisper drawer quickly.", ko:"야채 칸을 재빨리 닦았어요."},
-    {en:"I planned two easy dinners from the haul.", ko:"장 본 재료로 쉬운 저녁 두 끼를 계획했어요."},
-    {en:"I put receipts away for tracking.", ko:"영수증은 기록을 위해 모아두었어요."},
-    {en:"I felt ready for a week of simple meals.", ko:"한 주 간단한 식사를 준비한 느낌이에요."},
-    {en:"I smiled at how organized the cart looked.", ko:"정돈된 카트를 보며 흐뭇했어요."},
-  ],
-  "Gym": [
-    {en:"I warmed up for five minutes to prevent injury.", ko:"부상을 막으려고 5분간 워밍업했어요."},
-    {en:"I focused on form over heavy weight.", ko:"무게보다 자세에 집중했어요."},
-    {en:"I logged sets and reps in my app.", ko:"세트와 반복을 앱에 기록했어요."},
-    {en:"I alternated push and pull movements.", ko:"푸시/풀을 번갈아 구성했어요."},
-    {en:"I kept rest periods consistent.", ko:"휴식 시간을 일정하게 유지했어요."},
-    {en:"I added one small progression today.", ko:"오늘은 작은 진전을 하나 추가했어요."},
-    {en:"I hydrated between sets.", ko:"세트 사이에 수분을 보충했어요."},
-    {en:"I wiped down equipment after use.", ko:"사용한 기구는 바로 닦았어요."},
-    {en:"I ended with a light cooldown.", ko:"마무리는 가벼운 쿨다운으로 했어요."},
-    {en:"I stretched tight hips and hamstrings.", ko:"뻣뻣한 둔근과 햄스트링을 풀었어요."},
-    {en:"I avoided comparing myself to others.", ko:"다른 사람과 비교하지 않으려 했어요."},
-    {en:"I kept my phone on do-not-disturb.", ko:"방해 금지 모드로 집중했어요."},
-    {en:"I noted what felt stronger today.", ko:"오늘 강해진 부분을 기록했어요."},
-    {en:"I lowered volume when form broke down.", ko:"자세가 무너지면 볼륨을 줄였어요."},
-    {en:"I chose music that kept me moving.", ko:"움직임을 돕는 음악을 골랐어요."},
-    {en:"I respected others’ space and time.", ko:"다른 사람의 공간과 시간을 존중했어요."},
-    {en:"I left with steady energy, not exhaustion.", ko:"탈진이 아닌 안정된 에너지로 나왔어요."},
-    {en:"I ate protein within an hour.", ko:"한 시간 안에 단백질을 섭취했어요."},
-    {en:"I updated tomorrow’s plan briefly.", ko:"내일 계획을 간단히 수정했어요."},
-    {en:"I thanked my body for showing up.", ko:"운동한 내 몸에 감사했어요."},
-    {en:"I reminded myself: consistency beats intensity.", ko:"일관성이 강도를 이긴다고 되새겼어요."},
-  ],
-  "Evening Walk": [
-    {en:"I walked a quiet route to unwind.", ko:"마음을 풀기 위해 조용한 길을 걸었어요."},
-    {en:"I left my headphones at home tonight.", ko:"오늘 밤은 이어폰을 집에 두고 나왔어요."},
-    {en:"I watched the sky change colors.", ko:"변해가는 하늘빛을 바라봤어요."},
-    {en:"I kept a steady, easy pace.", ko:"균일하고 편한 속도로 걸었어요."},
-    {en:"I greeted a neighbor with a smile.", ko:"이웃에게 미소로 인사했어요."},
-    {en:"I noticed a new flower by the path.", ko:"길가에 새로 핀 꽃을 발견했어요."},
-    {en:"I stretched my back at a bench.", ko:"벤치에서 등을 가볍게 늘렸어요."},
-    {en:"I counted my breaths to slow my mind.", ko:"호흡을 세며 마음을 느리게 했어요."},
-    {en:"I avoided bright screens after returning.", ko:"돌아와서는 밝은 화면을 피했어요."},
-    {en:"I drank warm tea instead of a late snack.", ko:"야식 대신 따뜻한 차를 마셨어요."},
-    {en:"I tracked steps just out of curiosity.", ko:"호기심으로 걸음 수만 확인했어요."},
-    {en:"I kept the walk around twenty minutes.", ko:"산책은 20분 정도로 유지했어요."},
-    {en:"I listened to crickets and city sounds.", ko:"귀뚜라미와 도시 소리를 함께 들었어요."},
-    {en:"I felt tension melt from my shoulders.", ko:"어깨의 긴장이 스르르 풀렸어요."},
-    {en:"I waved to a friendly street cat.", ko:"친근한 길고양이에게 손을 흔들었어요."},
-    {en:"I took a different turn for variety.", ko:"변화를 주려고 다른 길로 꺾어 봤어요."},
-    {en:"I noticed my posture getting taller.", ko:"자세가 한층 곧아진 걸 느꼈어요."},
-    {en:"I ended the walk with gratitude.", ko:"감사한 마음으로 산책을 마쳤어요."},
-    {en:"I planned a slightly longer walk tomorrow.", ko:"내일은 조금 더 길게 걸어보려 해요."},
-    {en:"I slept better after a calm stroll.", ko:"차분한 산책 덕분에 더 잘 잤어요."},
-    {en:"I told myself, 'Evening resets the day.'", ko:"‘저녁 산책이 하루를 리셋해.’라고 생각했어요."},
-  ],
-  "Streaming Show": [
-    {en:"I picked one episode instead of binging.", ko:"정주행 대신 한 편만 보려고 골랐어요."},
-    {en:"I turned on subtitles to catch details.", ko:"디테일을 잡으려고 자막을 켰어요."},
-    {en:"I paused to refill water, not snacks.", ko:"간식 대신 물을 채우려 잠시 멈췄어요."},
-    {en:"I noted a quote I really liked.", ko:"마음에 든 대사를 메모했어요."},
-    {en:"I avoided spoilers and stayed present.", ko:"스포일러를 피하고 현재 장면에 집중했어요."},
-    {en:"I lowered brightness to rest my eyes.", ko:"눈을 위해 밝기를 낮췄어요."},
-    {en:"I stopped auto-play after the credits.", ko:"크레딧 후 자동 재생을 끄고 멈췄어요."},
-    {en:"I recommended the show to one friend.", ko:"친구 한 명에게 작품을 추천했어요."},
-    {en:"I skipped scenes that felt too heavy.", ko:"너무 무거운 장면은 건너뛰었어요."},
-    {en:"I stretched during a slow scene.", ko:"느린 장면에 가벼운 스트레칭을 했어요."},
-    {en:"I compared it to the book briefly.", ko:"원작 책과 잠깐 비교해 봤어요."},
-    {en:"I checked the director’s other works.", ko:"감독의 다른 작품도 찾아봤어요."},
-    {en:"I kept the volume low at night.", ko:"밤에는 볼륨을 낮게 유지했어요."},
-    {en:"I stopped before it got too late.", ko:"너무 늦어지기 전에 끄고 쉬었어요."},
-    {en:"I cleaned up the sofa and blanket.", ko:"소파와 담요를 정돈했어요."},
-    {en:"I rated the episode for my log.", ko:"기록을 위해 에피소드를 별점 매겼어요."},
-    {en:"I reflected on the theme afterward.", ko:"끝나고 주제를 잠시 곱씹었어요."},
-    {en:"I didn’t snack mindlessly this time.", ko:"이번엔 무념무상 간식을 피했어요."},
-    {en:"I decided what to watch next time.", ko:"다음에 볼 작품을 미리 정했어요."},
-    {en:"I shut the screen and chose to read.", ko:"화면을 끄고 독서를 선택했어요."},
-    {en:"I went to bed on time after one show.", ko:"한 편만 보고 제시간에 잠자리에 들었어요."},
-  ],
-  "Weekend Plan": [
-    {en:"I listed one fun and one restful activity.", ko:"재미있는 일 하나, 쉬는 일 하나를 적었어요."},
-    {en:"I set a budget for the outing.", ko:"외출 예산을 간단히 정했어요."},
-    {en:"I checked the weather and backups.", ko:"날씨와 대안을 확인했어요."},
-    {en:"I booked a time slot where needed.", ko:"필요한 곳은 시간을 예약했어요."},
-    {en:"I kept the plan light to avoid stress.", ko:"스트레스를 줄이려 일정을 가볍게 잡았어요."},
-    {en:"I included a short nature walk.", ko:"짧은 자연 산책을 포함했어요."},
-    {en:"I picked one place to try new food.", ko:"새로운 음식을 맛볼 곳을 정했어요."},
-    {en:"I left space for doing nothing.", ko:"아무것도 하지 않는 시간도 남겨뒀어요."},
-    {en:"I planned a small home project.", ko:"집에서 할 작은 프로젝트도 계획했어요."},
-    {en:"I set a time to call a friend.", ko:"친구에게 전화할 시간을 잡았어요."},
-    {en:"I checked transit to avoid traffic.", ko:"교통 상황을 확인해 막힘을 피하려 했어요."},
-    {en:"I chose a book to finish this weekend.", ko:"이번 주말에 끝낼 책을 골랐어요."},
-    {en:"I planned a simple family meal.", ko:"가족과 먹을 간단한 식사를 계획했어요."},
-    {en:"I prepared a picnic option just in case.", ko:"피크닉 대안도 가볍게 준비했어요."},
-    {en:"I set a time to clean a small corner.", ko:"집 한 구석을 정리할 시간을 정했어요."},
-    {en:"I picked a music playlist to match the mood.", ko:"분위기에 맞는 음악 플레이리스트를 골랐어요."},
-    {en:"I promised myself to take photos mindfully.", ko:"사진은 의식적으로 찍기로 했어요."},
-    {en:"I planned a budget-friendly treat.", ko:"지갑에 무리 없는 작은 선물을 계획했어요."},
-    {en:"I scheduled a proper bedtime on Sunday.", ko:"일요일엔 제시간에 잠자리에 들기로 했어요."},
-    {en:"I left Monday’s prep for Sunday evening.", ko:"월요일 준비는 일요일 저녁에 하기로 했어요."},
-    {en:"I felt excited but not overloaded.", ko:"들뜨되, 과하지 않게 준비됐어요."},
-  ],
-};
-
-/* ====== Pick bank (handcrafted first, then fallback) ====== */
-function bank21(title){
-  const set = HANDCRAFTED_21[title];
-  return Array.isArray(set) && set.length===21 ? set : bank21_fallback(title);
-}
-
 /* ====== Per-day state ====== */
 function ensureDayState(day){
   const k='Day'+day;
@@ -541,8 +266,8 @@ function speakOnce(text){ return new Promise(async (resolve)=>{ if(!('speechSynt
 async function speakQueue(arr,onStart,onEnd){ try{ onStart&&onStart(); for(const s of arr){ await speakOnce(s); } } finally{ onEnd&&onEnd(); } }
 function speak(text){ return speakQueue([text]); }
 
-/* ====== STT & Scoring (원본 유지) ====== */
-function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>{}; rec.onend=()=>onEnd&&onEnd(); return rec; }
+/* ====== STT & Scoring ====== */
+function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>{/* 일시 오류는 onend에서 복구 */}; rec.onend=()=>onEnd&&onEnd(); return rec; }
 function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) d[i][0]=i; for(let j=0;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
 function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
 function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0; const dist=levenshtein(A,B); const max=Math.max(A.length,B.length)||1; return Math.max(0, Math.round((1-dist/max)*100)); }
@@ -571,7 +296,7 @@ elRate.textContent=(user.ttsRate||1).toFixed(1)+'x';
 document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
 
-/* ====== Render Today (3 lines per view, 7 clicks → wrap) ====== */
+/* ====== Render Today (fixed 21 bank, 3 lines per view) ====== */
 function renderToday(){
   const day=getTodayDay(); const state=ensureDayState(day);
   const title=TITLES[day-1]; const bank = bank21(title);
@@ -600,6 +325,7 @@ function renderToday(){
     const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px';
     const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent='';
 
+    // 연습: 반드시 사용자가 중지 눌러야 종료(자동 종료시 재시작)
     let rec=null, recActive=false, hypAccum='';
     function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…(연습)'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기(연습)'; } }
     function startLineRec(){
@@ -643,7 +369,7 @@ function renderToday(){
   const btnRecAll=document.createElement('button');
   btnRecAll.className='btn pri';
   btnRecAll.textContent='● 3문장 연속 말하기(점수 반영)';
-  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식을 제한됩니다.'; }
+  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식이 제한됩니다.'; }
   btnRecAll.onclick=()=> practiceReciteOneShot_final(lines.map(x=>x.en), btnRecAll);
   allRow.appendChild(btnRecAll);
 
@@ -652,7 +378,7 @@ function renderToday(){
   updateProgress();
 }
 
-/* ====== Progress ====== */
+/* ====== Progress (연속 말하기 점수만 반영) ====== */
 function updateProgress(){
   const day=getTodayDay(); const d=ensureDayState(day);
   const avg = (typeof d.comboScore==='number') ? d.comboScore : 0;
@@ -681,7 +407,7 @@ function markDone(day,avg){
   renderChallenge100(); renderHistory();
 }
 
-/* ====== 3문장 연속 말하기 패널 ====== */
+/* ====== 3문장 연속 말하기: ‘중지’ 누르기 전 자동재시작 ====== */
 function concatenateLines(lines){ return lines.join(' '); }
 function practiceReciteOneShot_final(lines, triggerBtn){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -722,10 +448,2908 @@ function practiceReciteOneShot_final(lines, triggerBtn){
   const sumFb    = box.querySelector('#sumFb');
 
   let rec=null, finalText='', lastScore=null, lastFb='';
-  let recActive=false;
+  let recActive=false;   // 사용자가 ‘중지’ 누르기 전 true
   let canStart=true;
 
   function resetStartUI(){ btnStart.classList.remove('rec'); btnStart.textContent='● 말하기 시작'; btnStart.disabled=false; }
   function startRecognizer(){
     rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
-    if(rec){ try{ rec.start(); }catch(_){ can
+    if(rec){ try{ rec.start(); }catch(_){ canStart=true; resetStartUI(); btnStop.disabled=true; toast('마이크 시작 실패. 다시 시도해 주세요.'); } }
+    else { canStart=true; resetStartUI(); btnStop.disabled=true; }
+  }
+
+  function onResult(e){
+    for (let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i];
+      if(r.isFinal) finalText += (finalText?' ':'') + r[0].transcript;
+    }
+  }
+  function onEnd(){
+    if(recActive){ try{ rec=null; setTimeout(startRecognizer, 200); }catch(_){}; return; }
+    const refAll = concatenateLines(lines);
+    const sc = scoreSentence(refAll, finalText);
+    const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
+
+    lastScore = isNaN(sc)? null : sc; lastFb = fb.join(' · ');
+    sumScore.textContent = (lastScore==null)? '—' : (lastScore + '%');
+    sumFb.textContent = lastFb; resultBox.style.display = '';
+
+    btnStop.disabled = true; btnStop.textContent = '중지됨';
+    resetStartUI(); rec=null; setTimeout(()=>{ canStart=true; }, 200);
+  }
+
+  btnStart.onclick = ()=>{
+    if(!canStart || recActive) return;
+    canStart=false; finalText='';
+    recActive=true;
+    if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
+    btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
+    btnStop.disabled=false; btnStop.textContent='■ 중지';
+    setTimeout(startRecognizer, 150);
+    toast('한 번에 3문장을 말해 보세요…');
+  };
+
+  btnStop.onclick = ()=>{
+    if(!recActive) return;
+    recActive=false;                 // 사용자가 눌러야 종료
+    if(rec){ try{ rec.stop(); }catch(_){ } }
+    btnStop.disabled = true; btnStop.textContent = '중지됨';
+  };
+
+  box.querySelector('#btnClosePanel').onclick = ()=>{
+    try{ if(recActive && rec){ recActive=false; rec.abort(); } }catch(_){}
+    document.body.removeChild(wrap);
+    restoreTrigger();
+    if(lastScore!=null){
+      const day=getTodayDay(); const d=ensureDayState(day);
+      d.comboScore = lastScore; saveProg(prog);
+      updateProgress();
+      toast(`점수 ${lastScore}% 반영 완료`);
+    } else {
+      toast('점수 없이 닫았습니다.');
+    }
+  };
+}
+
+/* ====== 100-Day Calendar & History ====== */
+function renderChallenge100(){
+  const grid=document.getElementById('challenge100'); grid.innerHTML='';
+  const cur=getTodayDay();
+  for(let i=1;i<=100;i++){
+    const cell=document.createElement('div'); cell.className='day'; cell.textContent=i;
+    const k='Day'+i; if(prog[k] && prog[k].done){ cell.classList.add('done'); cell.style.borderColor='#3b82f6'; }
+    if(i===cur){ cell.style.outline='2px solid #5b8cff'; cell.style.color='#e8eefc'; }
+    cell.title=k+(i===cur?' • today':'');
+    cell.onclick=()=>{ prog._currentDay=i; saveProg(prog); tabs.forEach(b=>{ if(b.dataset.view==='home'){ b.click(); }}); renderToday(); };
+    grid.appendChild(cell);
+  }
+}
+
+function renderHistory(){
+  const box=document.getElementById('history');
+  let list = Array.isArray(prog._history) ? [...prog._history] : [];
+  if (!list.length){
+    list = Object.entries(prog)
+      .filter(([k,v])=>/^Day\d+$/.test(k) && v && typeof v.comboScore==='number')
+      .map(([k,v])=>({ day: parseInt(k.slice(3)), date: '', title: TITLES[parseInt(k.slice(3))-1], avg: v.comboScore }));
+  }
+  list.sort((a,b)=> a.day - b.day);
+  if(!list.length){ box.innerHTML='<div class="small">아직 기록이 없습니다.</div>'; return; }
+  const frag=document.createDocumentFragment();
+  list.forEach(item=>{
+    const div=document.createElement('div'); div.className='line';
+    const dateTxt = item.date ? ` <span class="small">(${item.date})</span>` : '';
+    div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+      <b>Day ${item.day} — ${item.title}${dateTxt}</b><span class="score">${item.avg}%</span></div>`;
+    frag.appendChild(div);
+  });
+  box.innerHTML=''; box.appendChild(frag);
+}
+
+/* ====== Shortcuts ====== */
+btnRetry.onclick=()=>{
+  const day=getTodayDay(); const k='Day'+day; const st=ensureDayState(day);
+  // 점수/완료 리셋 + 3문장 다음 묶음으로 이동
+  st.comboScore=null; st.done=false;
+  st.bankOffset = ((st.bankOffset||0) + 3) % 21;
+  saveProg(prog);
+  renderToday(); updateProgress();
+  toast('🔁 다음 3문장으로 바꿨어요.');
+};
+btnReset.onclick=()=>{ if(!confirm('정말 전체 데이터를 초기화할까요? (취소 불가)')) return;
+  localStorage.removeItem(LS_PROGRESS); prog=loadProg();
+  prog._startedAt=todayKey(); prog._currentDay=1; prog._lastDate=todayKey(); prog._history=[];
+  saveProg(prog);
+  renderToday(); renderChallenge100(); renderHistory(); updateProgress(); toast('🧹 모든 데이터가 초기화됐어요.');
+};
+
+/* ====== Auto Day Rollover (KST) ======
+   - 한국시간 자정이 지나면 자동으로 Day 업데이트 & 화면 갱신
+*/
+function autoDayRolloverTick(){
+  const nowKey = todayKey();
+  if(prog._lastDate !== nowKey){
+    prog._lastDate = nowKey;
+    // 시작일 기준 Day 자동 계산
+    prog._currentDay = computeDayFromStart();
+    // 새 날에는 해당 Day 상태 초기화(문장 뭉치 처음부터 보여주도록 bankOffset=0)
+    const k='Day'+prog._currentDay;
+    if(!prog[k]) prog[k]={ comboScore:null, done:false, bankOffset:0 };
+    saveProg(prog);
+    renderToday(); renderChallenge100(); updateProgress();
+    toast('📅 새로운 날이 시작되어 주제를 바꿨어요!');
+  }
+}
+setInterval(autoDayRolloverTick, 60*1000); // 1분마다 체크
+// 앱 진입 직후에도 한번 확인
+autoDayRolloverTick();
+
+/* ====== PWA ====== */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
+
+/* ====== Boot ====== */
+function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
+function updateHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
+function boot(){ initHeaderKPI(); renderToday(); renderChallenge100(); updateProgress(); }
+boot();
+const TOPICS = [
+  {
+    "topic": "Coffee & Café",
+    "sentences": [
+      "Could I get a medium latte to go?",
+      "Do you have any non-dairy options today?",
+      "Can you make it half sweet, please?",
+      "Is there a refill on drip coffee?",
+      "Do you take Apple Pay here?",
+      "Can I get an extra shot in that?",
+      "What pastry do you recommend this morning?",
+      "Is the cold brew pretty strong?",
+      "Do you have oat milk or almond milk?",
+      "Could you warm this up a little more?",
+      "Is there Wi-Fi, and what’s the password?",
+      "Mind if I grab a seat by the outlet?",
+      "Can you split the check for us?",
+      "Is tipping included, or should I add it here?",
+      "Could you remake this? It tastes a bit burnt.",
+      "Is there a restroom code I can use?",
+      "Do you offer any loyalty rewards?",
+      "How late are you open tonight?",
+      "Can you put the lid on tight for me?",
+      "Do you have decaf espresso?",
+      "I’ll have whatever your seasonal special is."
+    ]
+  },
+  {
+    "topic": "Work Meetings",
+    "sentences": [
+      "Can we keep this meeting to thirty minutes?",
+      "What’s the agenda, and who’s leading?",
+      "Could someone take notes and share after?",
+      "Let’s park that and circle back offline.",
+      "What’s the decision we need by the end?",
+      "Do we have the right people in the room?",
+      "Can we get an update on action items?",
+      "Let’s timebox this discussion to five minutes.",
+      "Can we table the details and focus on outcomes?",
+      "Who owns this task and by when?",
+      "Could you drop the doc link in the chat?",
+      "Let’s start with the blockers, then wins.",
+      "Do we need a follow-up or is this done?",
+      "Quick pulse check—are we aligned?",
+      "Can we record this for those who can’t join?",
+      "Let’s keep side conversations in the chat.",
+      "Two minutes left—let’s lock next steps.",
+      "Please keep cameras on if you can.",
+      "Let’s skip intros and jump right in.",
+      "I’ll send a summary with owners and dates.",
+      "Thanks, everyone—ending a few minutes early."
+    ]
+  },
+  {
+    "topic": "Small Talk",
+    "sentences": [
+      "How’s your week going so far?",
+      "Did you do anything fun over the weekend?",
+      "How’s work treating you these days?",
+      "Have you tried any new restaurants lately?",
+      "Got any plans for the long weekend?",
+      "How’s the family doing?",
+      "Have you seen any good shows recently?",
+      "How’s the new place working out?",
+      "Are you into any hobbies right now?",
+      "How’s your commute been lately?",
+      "Any trips coming up for you?",
+      "Did you catch the game last night?",
+      "How’s the weather holding up where you are?",
+      "How’s that project you mentioned going?",
+      "Have you read anything good lately?",
+      "How’s the dog doing these days?",
+      "Any new coffee spots you like?",
+      "How’s your back feeling after the move?",
+      "How’s the training going?",
+      "Any fun plans after work today?",
+      "Staying busy or staying sane—maybe both?"
+    ]
+  },
+  {
+    "topic": "Weather",
+    "sentences": [
+      "Is it supposed to rain this afternoon?",
+      "Do I need a jacket, or is it warm enough?",
+      "Is the humidity awful today or not too bad?",
+      "Did the storm wake you up last night?",
+      "Is it still smoky outside or has it cleared up?",
+      "How icy are the roads this morning?",
+      "Is there a heat advisory right now?",
+      "Should we move this indoors if it rains?",
+      "Is the wind bad on the bridge today?",
+      "Will it cool down by the evening?",
+      "Is the air quality okay for a run?",
+      "Are we getting snow or just slush?",
+      "Is it safe to drive up to the mountains?",
+      "Should I bring sunscreen for the picnic?",
+      "Is the forecast reliable this week?",
+      "Is it muggy or pretty dry out there?",
+      "Did the temperature drop overnight?",
+      "Is it actually fall yet or still summer?",
+      "Do we need to reschedule because of the weather?",
+      "Is the park closed due to the storm?",
+      "Is it safe to grill with this wind?"
+    ]
+  },
+  {
+    "topic": "Travel Plans",
+    "sentences": [
+      "Are you flying out of JFK or LAX?",
+      "Did you already book your hotel?",
+      "Do you prefer an aisle seat or a window?",
+      "How many bags are you checking?",
+      "Can you share your itinerary with me?",
+      "Do you need a ride to the airport?",
+      "Is your passport still valid?",
+      "Do you want travel insurance for this trip?",
+      "Are you renting a car or using rideshare?",
+      "Any must-see spots on your list?",
+      "Do you want to split the Airbnb cost?",
+      "Should we pack light or bring options?",
+      "Is there a dress code for the event?",
+      "Do we need to make restaurant reservations?",
+      "How early do we need to get to the gate?",
+      "Is there lounge access with your card?",
+      "Should we plan a buffer day after we land?",
+      "Are we budgeting daily or just tracking totals?",
+      "Do you want me to handle the check-in?",
+      "Any food allergies I should know about?",
+      "Let’s sync on packing so we don’t duplicate."
+    ]
+  },
+  {
+    "topic": "Weekend Plans",
+    "sentences": [
+      "Can we talk about weekend plans later today?",
+      "Do you have a minute to chat about weekend plans?",
+      "What’s your usual approach when it comes to weekend plans?",
+      "I’ve run into a small problem with weekend plans. Any ideas?",
+      "How do you normally handle weekend plans in your day to day?",
+      "Could you give me a quick tip about weekend plans?",
+      "I’m trying to get better at weekend plans; what would you suggest?",
+      "I’ve got a question about weekend plans—mind if I ask?",
+      "What’s the biggest mistake people make with weekend plans?",
+      "Do you prefer a simple or detailed plan for weekend plans?",
+      "I’m torn between two options for weekend plans. What do you think?",
+      "If you had to explain weekend plans to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with weekend plans?",
+      "What’s the timeline we’re looking at for weekend plans?",
+      "Could we set some expectations around weekend plans?",
+      "I’d appreciate your feedback on weekend plans.",
+      "Has anything changed recently regarding weekend plans?",
+      "What’s the backup plan if weekend plans doesn’t work out?",
+      "Do we need to loop anyone else in about weekend plans?",
+      "How will we measure success for weekend plans?",
+      "Let’s keep weekend plans simple and practical."
+    ]
+  },
+  {
+    "topic": "Commuting",
+    "sentences": [
+      "Can we talk about commuting later today?",
+      "Do you have a minute to chat about commuting?",
+      "What’s your usual approach when it comes to commuting?",
+      "I’ve run into a small problem with commuting. Any ideas?",
+      "How do you normally handle commuting in your day to day?",
+      "Could you give me a quick tip about commuting?",
+      "I’m trying to get better at commuting; what would you suggest?",
+      "I’ve got a question about commuting—mind if I ask?",
+      "What’s the biggest mistake people make with commuting?",
+      "Do you prefer a simple or detailed plan for commuting?",
+      "I’m torn between two options for commuting. What do you think?",
+      "If you had to explain commuting to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with commuting?",
+      "What’s the timeline we’re looking at for commuting?",
+      "Could we set some expectations around commuting?",
+      "I’d appreciate your feedback on commuting.",
+      "Has anything changed recently regarding commuting?",
+      "What’s the backup plan if commuting doesn’t work out?",
+      "Do we need to loop anyone else in about commuting?",
+      "How will we measure success for commuting?",
+      "Let’s keep commuting simple and practical."
+    ]
+  },
+  {
+    "topic": "Gym & Fitness",
+    "sentences": [
+      "Can we talk about gym & fitness later today?",
+      "Do you have a minute to chat about gym & fitness?",
+      "What’s your usual approach when it comes to gym & fitness?",
+      "I’ve run into a small problem with gym & fitness. Any ideas?",
+      "How do you normally handle gym & fitness in your day to day?",
+      "Could you give me a quick tip about gym & fitness?",
+      "I’m trying to get better at gym & fitness; what would you suggest?",
+      "I’ve got a question about gym & fitness—mind if I ask?",
+      "What’s the biggest mistake people make with gym & fitness?",
+      "Do you prefer a simple or detailed plan for gym & fitness?",
+      "I’m torn between two options for gym & fitness. What do you think?",
+      "If you had to explain gym & fitness to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with gym & fitness?",
+      "What’s the timeline we’re looking at for gym & fitness?",
+      "Could we set some expectations around gym & fitness?",
+      "I’d appreciate your feedback on gym & fitness.",
+      "Has anything changed recently regarding gym & fitness?",
+      "What’s the backup plan if gym & fitness doesn’t work out?",
+      "Do we need to loop anyone else in about gym & fitness?",
+      "How will we measure success for gym & fitness?",
+      "Let’s keep gym & fitness simple and practical."
+    ]
+  },
+  {
+    "topic": "Eating Out",
+    "sentences": [
+      "Can we talk about eating out later today?",
+      "Do you have a minute to chat about eating out?",
+      "What’s your usual approach when it comes to eating out?",
+      "I’ve run into a small problem with eating out. Any ideas?",
+      "How do you normally handle eating out in your day to day?",
+      "Could you give me a quick tip about eating out?",
+      "I’m trying to get better at eating out; what would you suggest?",
+      "I’ve got a question about eating out—mind if I ask?",
+      "What’s the biggest mistake people make with eating out?",
+      "Do you prefer a simple or detailed plan for eating out?",
+      "I’m torn between two options for eating out. What do you think?",
+      "If you had to explain eating out to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with eating out?",
+      "What’s the timeline we’re looking at for eating out?",
+      "Could we set some expectations around eating out?",
+      "I’d appreciate your feedback on eating out.",
+      "Has anything changed recently regarding eating out?",
+      "What’s the backup plan if eating out doesn’t work out?",
+      "Do we need to loop anyone else in about eating out?",
+      "How will we measure success for eating out?",
+      "Let’s keep eating out simple and practical."
+    ]
+  },
+  {
+    "topic": "Grocery Shopping",
+    "sentences": [
+      "Can we talk about grocery shopping later today?",
+      "Do you have a minute to chat about grocery shopping?",
+      "What’s your usual approach when it comes to grocery shopping?",
+      "I’ve run into a small problem with grocery shopping. Any ideas?",
+      "How do you normally handle grocery shopping in your day to day?",
+      "Could you give me a quick tip about grocery shopping?",
+      "I’m trying to get better at grocery shopping; what would you suggest?",
+      "I’ve got a question about grocery shopping—mind if I ask?",
+      "What’s the biggest mistake people make with grocery shopping?",
+      "Do you prefer a simple or detailed plan for grocery shopping?",
+      "I’m torn between two options for grocery shopping. What do you think?",
+      "If you had to explain grocery shopping to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with grocery shopping?",
+      "What’s the timeline we’re looking at for grocery shopping?",
+      "Could we set some expectations around grocery shopping?",
+      "I’d appreciate your feedback on grocery shopping.",
+      "Has anything changed recently regarding grocery shopping?",
+      "What’s the backup plan if grocery shopping doesn’t work out?",
+      "Do we need to loop anyone else in about grocery shopping?",
+      "How will we measure success for grocery shopping?",
+      "Let’s keep grocery shopping simple and practical."
+    ]
+  },
+  {
+    "topic": "Neighbors",
+    "sentences": [
+      "Can we talk about neighbors later today?",
+      "Do you have a minute to chat about neighbors?",
+      "What’s your usual approach when it comes to neighbors?",
+      "I’ve run into a small problem with neighbors. Any ideas?",
+      "How do you normally handle neighbors in your day to day?",
+      "Could you give me a quick tip about neighbors?",
+      "I’m trying to get better at neighbors; what would you suggest?",
+      "I’ve got a question about neighbors—mind if I ask?",
+      "What’s the biggest mistake people make with neighbors?",
+      "Do you prefer a simple or detailed plan for neighbors?",
+      "I’m torn between two options for neighbors. What do you think?",
+      "If you had to explain neighbors to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with neighbors?",
+      "What’s the timeline we’re looking at for neighbors?",
+      "Could we set some expectations around neighbors?",
+      "I’d appreciate your feedback on neighbors.",
+      "Has anything changed recently regarding neighbors?",
+      "What’s the backup plan if neighbors doesn’t work out?",
+      "Do we need to loop anyone else in about neighbors?",
+      "How will we measure success for neighbors?",
+      "Let’s keep neighbors simple and practical."
+    ]
+  },
+  {
+    "topic": "Apartment Issues",
+    "sentences": [
+      "Can we talk about apartment issues later today?",
+      "Do you have a minute to chat about apartment issues?",
+      "What’s your usual approach when it comes to apartment issues?",
+      "I’ve run into a small problem with apartment issues. Any ideas?",
+      "How do you normally handle apartment issues in your day to day?",
+      "Could you give me a quick tip about apartment issues?",
+      "I’m trying to get better at apartment issues; what would you suggest?",
+      "I’ve got a question about apartment issues—mind if I ask?",
+      "What’s the biggest mistake people make with apartment issues?",
+      "Do you prefer a simple or detailed plan for apartment issues?",
+      "I’m torn between two options for apartment issues. What do you think?",
+      "If you had to explain apartment issues to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with apartment issues?",
+      "What’s the timeline we’re looking at for apartment issues?",
+      "Could we set some expectations around apartment issues?",
+      "I’d appreciate your feedback on apartment issues.",
+      "Has anything changed recently regarding apartment issues?",
+      "What’s the backup plan if apartment issues doesn’t work out?",
+      "Do we need to loop anyone else in about apartment issues?",
+      "How will we measure success for apartment issues?",
+      "Let’s keep apartment issues simple and practical."
+    ]
+  },
+  {
+    "topic": "Parenting",
+    "sentences": [
+      "Can we talk about parenting later today?",
+      "Do you have a minute to chat about parenting?",
+      "What’s your usual approach when it comes to parenting?",
+      "I’ve run into a small problem with parenting. Any ideas?",
+      "How do you normally handle parenting in your day to day?",
+      "Could you give me a quick tip about parenting?",
+      "I’m trying to get better at parenting; what would you suggest?",
+      "I’ve got a question about parenting—mind if I ask?",
+      "What’s the biggest mistake people make with parenting?",
+      "Do you prefer a simple or detailed plan for parenting?",
+      "I’m torn between two options for parenting. What do you think?",
+      "If you had to explain parenting to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with parenting?",
+      "What’s the timeline we’re looking at for parenting?",
+      "Could we set some expectations around parenting?",
+      "I’d appreciate your feedback on parenting.",
+      "Has anything changed recently regarding parenting?",
+      "What’s the backup plan if parenting doesn’t work out?",
+      "Do we need to loop anyone else in about parenting?",
+      "How will we measure success for parenting?",
+      "Let’s keep parenting simple and practical."
+    ]
+  },
+  {
+    "topic": "School Events",
+    "sentences": [
+      "Can we talk about school events later today?",
+      "Do you have a minute to chat about school events?",
+      "What’s your usual approach when it comes to school events?",
+      "I’ve run into a small problem with school events. Any ideas?",
+      "How do you normally handle school events in your day to day?",
+      "Could you give me a quick tip about school events?",
+      "I’m trying to get better at school events; what would you suggest?",
+      "I’ve got a question about school events—mind if I ask?",
+      "What’s the biggest mistake people make with school events?",
+      "Do you prefer a simple or detailed plan for school events?",
+      "I’m torn between two options for school events. What do you think?",
+      "If you had to explain school events to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with school events?",
+      "What’s the timeline we’re looking at for school events?",
+      "Could we set some expectations around school events?",
+      "I’d appreciate your feedback on school events.",
+      "Has anything changed recently regarding school events?",
+      "What’s the backup plan if school events doesn’t work out?",
+      "Do we need to loop anyone else in about school events?",
+      "How will we measure success for school events?",
+      "Let’s keep school events simple and practical."
+    ]
+  },
+  {
+    "topic": "Health & Doctor",
+    "sentences": [
+      "Can we talk about health & doctor later today?",
+      "Do you have a minute to chat about health & doctor?",
+      "What’s your usual approach when it comes to health & doctor?",
+      "I’ve run into a small problem with health & doctor. Any ideas?",
+      "How do you normally handle health & doctor in your day to day?",
+      "Could you give me a quick tip about health & doctor?",
+      "I’m trying to get better at health & doctor; what would you suggest?",
+      "I’ve got a question about health & doctor—mind if I ask?",
+      "What’s the biggest mistake people make with health & doctor?",
+      "Do you prefer a simple or detailed plan for health & doctor?",
+      "I’m torn between two options for health & doctor. What do you think?",
+      "If you had to explain health & doctor to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with health & doctor?",
+      "What’s the timeline we’re looking at for health & doctor?",
+      "Could we set some expectations around health & doctor?",
+      "I’d appreciate your feedback on health & doctor.",
+      "Has anything changed recently regarding health & doctor?",
+      "What’s the backup plan if health & doctor doesn’t work out?",
+      "Do we need to loop anyone else in about health & doctor?",
+      "How will we measure success for health & doctor?",
+      "Let’s keep health & doctor simple and practical."
+    ]
+  },
+  {
+    "topic": "Banking",
+    "sentences": [
+      "Can we talk about banking later today?",
+      "Do you have a minute to chat about banking?",
+      "What’s your usual approach when it comes to banking?",
+      "I’ve run into a small problem with banking. Any ideas?",
+      "How do you normally handle banking in your day to day?",
+      "Could you give me a quick tip about banking?",
+      "I’m trying to get better at banking; what would you suggest?",
+      "I’ve got a question about banking—mind if I ask?",
+      "What’s the biggest mistake people make with banking?",
+      "Do you prefer a simple or detailed plan for banking?",
+      "I’m torn between two options for banking. What do you think?",
+      "If you had to explain banking to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with banking?",
+      "What’s the timeline we’re looking at for banking?",
+      "Could we set some expectations around banking?",
+      "I’d appreciate your feedback on banking.",
+      "Has anything changed recently regarding banking?",
+      "What’s the backup plan if banking doesn’t work out?",
+      "Do we need to loop anyone else in about banking?",
+      "How will we measure success for banking?",
+      "Let’s keep banking simple and practical."
+    ]
+  },
+  {
+    "topic": "Online Shopping",
+    "sentences": [
+      "Can we talk about online shopping later today?",
+      "Do you have a minute to chat about online shopping?",
+      "What’s your usual approach when it comes to online shopping?",
+      "I’ve run into a small problem with online shopping. Any ideas?",
+      "How do you normally handle online shopping in your day to day?",
+      "Could you give me a quick tip about online shopping?",
+      "I’m trying to get better at online shopping; what would you suggest?",
+      "I’ve got a question about online shopping—mind if I ask?",
+      "What’s the biggest mistake people make with online shopping?",
+      "Do you prefer a simple or detailed plan for online shopping?",
+      "I’m torn between two options for online shopping. What do you think?",
+      "If you had to explain online shopping to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with online shopping?",
+      "What’s the timeline we’re looking at for online shopping?",
+      "Could we set some expectations around online shopping?",
+      "I’d appreciate your feedback on online shopping.",
+      "Has anything changed recently regarding online shopping?",
+      "What’s the backup plan if online shopping doesn’t work out?",
+      "Do we need to loop anyone else in about online shopping?",
+      "How will we measure success for online shopping?",
+      "Let’s keep online shopping simple and practical."
+    ]
+  },
+  {
+    "topic": "Tech Support",
+    "sentences": [
+      "Can we talk about tech support later today?",
+      "Do you have a minute to chat about tech support?",
+      "What’s your usual approach when it comes to tech support?",
+      "I’ve run into a small problem with tech support. Any ideas?",
+      "How do you normally handle tech support in your day to day?",
+      "Could you give me a quick tip about tech support?",
+      "I’m trying to get better at tech support; what would you suggest?",
+      "I’ve got a question about tech support—mind if I ask?",
+      "What’s the biggest mistake people make with tech support?",
+      "Do you prefer a simple or detailed plan for tech support?",
+      "I’m torn between two options for tech support. What do you think?",
+      "If you had to explain tech support to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with tech support?",
+      "What’s the timeline we’re looking at for tech support?",
+      "Could we set some expectations around tech support?",
+      "I’d appreciate your feedback on tech support.",
+      "Has anything changed recently regarding tech support?",
+      "What’s the backup plan if tech support doesn’t work out?",
+      "Do we need to loop anyone else in about tech support?",
+      "How will we measure success for tech support?",
+      "Let’s keep tech support simple and practical."
+    ]
+  },
+  {
+    "topic": "Car Troubles",
+    "sentences": [
+      "Can we talk about car troubles later today?",
+      "Do you have a minute to chat about car troubles?",
+      "What’s your usual approach when it comes to car troubles?",
+      "I’ve run into a small problem with car troubles. Any ideas?",
+      "How do you normally handle car troubles in your day to day?",
+      "Could you give me a quick tip about car troubles?",
+      "I’m trying to get better at car troubles; what would you suggest?",
+      "I’ve got a question about car troubles—mind if I ask?",
+      "What’s the biggest mistake people make with car troubles?",
+      "Do you prefer a simple or detailed plan for car troubles?",
+      "I’m torn between two options for car troubles. What do you think?",
+      "If you had to explain car troubles to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with car troubles?",
+      "What’s the timeline we’re looking at for car troubles?",
+      "Could we set some expectations around car troubles?",
+      "I’d appreciate your feedback on car troubles.",
+      "Has anything changed recently regarding car troubles?",
+      "What’s the backup plan if car troubles doesn’t work out?",
+      "Do we need to loop anyone else in about car troubles?",
+      "How will we measure success for car troubles?",
+      "Let’s keep car troubles simple and practical."
+    ]
+  },
+  {
+    "topic": "Public Transportation",
+    "sentences": [
+      "Can we talk about public transportation later today?",
+      "Do you have a minute to chat about public transportation?",
+      "What’s your usual approach when it comes to public transportation?",
+      "I’ve run into a small problem with public transportation. Any ideas?",
+      "How do you normally handle public transportation in your day to day?",
+      "Could you give me a quick tip about public transportation?",
+      "I’m trying to get better at public transportation; what would you suggest?",
+      "I’ve got a question about public transportation—mind if I ask?",
+      "What’s the biggest mistake people make with public transportation?",
+      "Do you prefer a simple or detailed plan for public transportation?",
+      "I’m torn between two options for public transportation. What do you think?",
+      "If you had to explain public transportation to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with public transportation?",
+      "What’s the timeline we’re looking at for public transportation?",
+      "Could we set some expectations around public transportation?",
+      "I’d appreciate your feedback on public transportation.",
+      "Has anything changed recently regarding public transportation?",
+      "What’s the backup plan if public transportation doesn’t work out?",
+      "Do we need to loop anyone else in about public transportation?",
+      "How will we measure success for public transportation?",
+      "Let’s keep public transportation simple and practical."
+    ]
+  },
+  {
+    "topic": "Airports & Flights",
+    "sentences": [
+      "Can we talk about airports & flights later today?",
+      "Do you have a minute to chat about airports & flights?",
+      "What’s your usual approach when it comes to airports & flights?",
+      "I’ve run into a small problem with airports & flights. Any ideas?",
+      "How do you normally handle airports & flights in your day to day?",
+      "Could you give me a quick tip about airports & flights?",
+      "I’m trying to get better at airports & flights; what would you suggest?",
+      "I’ve got a question about airports & flights—mind if I ask?",
+      "What’s the biggest mistake people make with airports & flights?",
+      "Do you prefer a simple or detailed plan for airports & flights?",
+      "I’m torn between two options for airports & flights. What do you think?",
+      "If you had to explain airports & flights to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with airports & flights?",
+      "What’s the timeline we’re looking at for airports & flights?",
+      "Could we set some expectations around airports & flights?",
+      "I’d appreciate your feedback on airports & flights.",
+      "Has anything changed recently regarding airports & flights?",
+      "What’s the backup plan if airports & flights doesn’t work out?",
+      "Do we need to loop anyone else in about airports & flights?",
+      "How will we measure success for airports & flights?",
+      "Let’s keep airports & flights simple and practical."
+    ]
+  },
+  {
+    "topic": "Hotels & Check-in",
+    "sentences": [
+      "Can we talk about hotels & check-in later today?",
+      "Do you have a minute to chat about hotels & check-in?",
+      "What’s your usual approach when it comes to hotels & check-in?",
+      "I’ve run into a small problem with hotels & check-in. Any ideas?",
+      "How do you normally handle hotels & check-in in your day to day?",
+      "Could you give me a quick tip about hotels & check-in?",
+      "I’m trying to get better at hotels & check-in; what would you suggest?",
+      "I’ve got a question about hotels & check-in—mind if I ask?",
+      "What’s the biggest mistake people make with hotels & check-in?",
+      "Do you prefer a simple or detailed plan for hotels & check-in?",
+      "I’m torn between two options for hotels & check-in. What do you think?",
+      "If you had to explain hotels & check-in to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with hotels & check-in?",
+      "What’s the timeline we’re looking at for hotels & check-in?",
+      "Could we set some expectations around hotels & check-in?",
+      "I’d appreciate your feedback on hotels & check-in.",
+      "Has anything changed recently regarding hotels & check-in?",
+      "What’s the backup plan if hotels & check-in doesn’t work out?",
+      "Do we need to loop anyone else in about hotels & check-in?",
+      "How will we measure success for hotels & check-in?",
+      "Let’s keep hotels & check-in simple and practical."
+    ]
+  },
+  {
+    "topic": "Directions",
+    "sentences": [
+      "Can we talk about directions later today?",
+      "Do you have a minute to chat about directions?",
+      "What’s your usual approach when it comes to directions?",
+      "I’ve run into a small problem with directions. Any ideas?",
+      "How do you normally handle directions in your day to day?",
+      "Could you give me a quick tip about directions?",
+      "I’m trying to get better at directions; what would you suggest?",
+      "I’ve got a question about directions—mind if I ask?",
+      "What’s the biggest mistake people make with directions?",
+      "Do you prefer a simple or detailed plan for directions?",
+      "I’m torn between two options for directions. What do you think?",
+      "If you had to explain directions to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with directions?",
+      "What’s the timeline we’re looking at for directions?",
+      "Could we set some expectations around directions?",
+      "I’d appreciate your feedback on directions.",
+      "Has anything changed recently regarding directions?",
+      "What’s the backup plan if directions doesn’t work out?",
+      "Do we need to loop anyone else in about directions?",
+      "How will we measure success for directions?",
+      "Let’s keep directions simple and practical."
+    ]
+  },
+  {
+    "topic": "Phone Calls",
+    "sentences": [
+      "Can we talk about phone calls later today?",
+      "Do you have a minute to chat about phone calls?",
+      "What’s your usual approach when it comes to phone calls?",
+      "I’ve run into a small problem with phone calls. Any ideas?",
+      "How do you normally handle phone calls in your day to day?",
+      "Could you give me a quick tip about phone calls?",
+      "I’m trying to get better at phone calls; what would you suggest?",
+      "I’ve got a question about phone calls—mind if I ask?",
+      "What’s the biggest mistake people make with phone calls?",
+      "Do you prefer a simple or detailed plan for phone calls?",
+      "I’m torn between two options for phone calls. What do you think?",
+      "If you had to explain phone calls to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with phone calls?",
+      "What’s the timeline we’re looking at for phone calls?",
+      "Could we set some expectations around phone calls?",
+      "I’d appreciate your feedback on phone calls.",
+      "Has anything changed recently regarding phone calls?",
+      "What’s the backup plan if phone calls doesn’t work out?",
+      "Do we need to loop anyone else in about phone calls?",
+      "How will we measure success for phone calls?",
+      "Let’s keep phone calls simple and practical."
+    ]
+  },
+  {
+    "topic": "Scheduling",
+    "sentences": [
+      "Can we talk about scheduling later today?",
+      "Do you have a minute to chat about scheduling?",
+      "What’s your usual approach when it comes to scheduling?",
+      "I’ve run into a small problem with scheduling. Any ideas?",
+      "How do you normally handle scheduling in your day to day?",
+      "Could you give me a quick tip about scheduling?",
+      "I’m trying to get better at scheduling; what would you suggest?",
+      "I’ve got a question about scheduling—mind if I ask?",
+      "What’s the biggest mistake people make with scheduling?",
+      "Do you prefer a simple or detailed plan for scheduling?",
+      "I’m torn between two options for scheduling. What do you think?",
+      "If you had to explain scheduling to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with scheduling?",
+      "What’s the timeline we’re looking at for scheduling?",
+      "Could we set some expectations around scheduling?",
+      "I’d appreciate your feedback on scheduling.",
+      "Has anything changed recently regarding scheduling?",
+      "What’s the backup plan if scheduling doesn’t work out?",
+      "Do we need to loop anyone else in about scheduling?",
+      "How will we measure success for scheduling?",
+      "Let’s keep scheduling simple and practical."
+    ]
+  },
+  {
+    "topic": "Invitations",
+    "sentences": [
+      "Can we talk about invitations later today?",
+      "Do you have a minute to chat about invitations?",
+      "What’s your usual approach when it comes to invitations?",
+      "I’ve run into a small problem with invitations. Any ideas?",
+      "How do you normally handle invitations in your day to day?",
+      "Could you give me a quick tip about invitations?",
+      "I’m trying to get better at invitations; what would you suggest?",
+      "I’ve got a question about invitations—mind if I ask?",
+      "What’s the biggest mistake people make with invitations?",
+      "Do you prefer a simple or detailed plan for invitations?",
+      "I’m torn between two options for invitations. What do you think?",
+      "If you had to explain invitations to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with invitations?",
+      "What’s the timeline we’re looking at for invitations?",
+      "Could we set some expectations around invitations?",
+      "I’d appreciate your feedback on invitations.",
+      "Has anything changed recently regarding invitations?",
+      "What’s the backup plan if invitations doesn’t work out?",
+      "Do we need to loop anyone else in about invitations?",
+      "How will we measure success for invitations?",
+      "Let’s keep invitations simple and practical."
+    ]
+  },
+  {
+    "topic": "Apologies",
+    "sentences": [
+      "Can we talk about apologies later today?",
+      "Do you have a minute to chat about apologies?",
+      "What’s your usual approach when it comes to apologies?",
+      "I’ve run into a small problem with apologies. Any ideas?",
+      "How do you normally handle apologies in your day to day?",
+      "Could you give me a quick tip about apologies?",
+      "I’m trying to get better at apologies; what would you suggest?",
+      "I’ve got a question about apologies—mind if I ask?",
+      "What’s the biggest mistake people make with apologies?",
+      "Do you prefer a simple or detailed plan for apologies?",
+      "I’m torn between two options for apologies. What do you think?",
+      "If you had to explain apologies to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with apologies?",
+      "What’s the timeline we’re looking at for apologies?",
+      "Could we set some expectations around apologies?",
+      "I’d appreciate your feedback on apologies.",
+      "Has anything changed recently regarding apologies?",
+      "What’s the backup plan if apologies doesn’t work out?",
+      "Do we need to loop anyone else in about apologies?",
+      "How will we measure success for apologies?",
+      "Let’s keep apologies simple and practical."
+    ]
+  },
+  {
+    "topic": "Gratitude",
+    "sentences": [
+      "Can we talk about gratitude later today?",
+      "Do you have a minute to chat about gratitude?",
+      "What’s your usual approach when it comes to gratitude?",
+      "I’ve run into a small problem with gratitude. Any ideas?",
+      "How do you normally handle gratitude in your day to day?",
+      "Could you give me a quick tip about gratitude?",
+      "I’m trying to get better at gratitude; what would you suggest?",
+      "I’ve got a question about gratitude—mind if I ask?",
+      "What’s the biggest mistake people make with gratitude?",
+      "Do you prefer a simple or detailed plan for gratitude?",
+      "I’m torn between two options for gratitude. What do you think?",
+      "If you had to explain gratitude to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with gratitude?",
+      "What’s the timeline we’re looking at for gratitude?",
+      "Could we set some expectations around gratitude?",
+      "I’d appreciate your feedback on gratitude.",
+      "Has anything changed recently regarding gratitude?",
+      "What’s the backup plan if gratitude doesn’t work out?",
+      "Do we need to loop anyone else in about gratitude?",
+      "How will we measure success for gratitude?",
+      "Let’s keep gratitude simple and practical."
+    ]
+  },
+  {
+    "topic": "Complaints",
+    "sentences": [
+      "Can we talk about complaints later today?",
+      "Do you have a minute to chat about complaints?",
+      "What’s your usual approach when it comes to complaints?",
+      "I’ve run into a small problem with complaints. Any ideas?",
+      "How do you normally handle complaints in your day to day?",
+      "Could you give me a quick tip about complaints?",
+      "I’m trying to get better at complaints; what would you suggest?",
+      "I’ve got a question about complaints—mind if I ask?",
+      "What’s the biggest mistake people make with complaints?",
+      "Do you prefer a simple or detailed plan for complaints?",
+      "I’m torn between two options for complaints. What do you think?",
+      "If you had to explain complaints to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with complaints?",
+      "What’s the timeline we’re looking at for complaints?",
+      "Could we set some expectations around complaints?",
+      "I’d appreciate your feedback on complaints.",
+      "Has anything changed recently regarding complaints?",
+      "What’s the backup plan if complaints doesn’t work out?",
+      "Do we need to loop anyone else in about complaints?",
+      "How will we measure success for complaints?",
+      "Let’s keep complaints simple and practical."
+    ]
+  },
+  {
+    "topic": "Feedback",
+    "sentences": [
+      "Can we talk about feedback later today?",
+      "Do you have a minute to chat about feedback?",
+      "What’s your usual approach when it comes to feedback?",
+      "I’ve run into a small problem with feedback. Any ideas?",
+      "How do you normally handle feedback in your day to day?",
+      "Could you give me a quick tip about feedback?",
+      "I’m trying to get better at feedback; what would you suggest?",
+      "I’ve got a question about feedback—mind if I ask?",
+      "What’s the biggest mistake people make with feedback?",
+      "Do you prefer a simple or detailed plan for feedback?",
+      "I’m torn between two options for feedback. What do you think?",
+      "If you had to explain feedback to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with feedback?",
+      "What’s the timeline we’re looking at for feedback?",
+      "Could we set some expectations around feedback?",
+      "I’d appreciate your feedback on feedback.",
+      "Has anything changed recently regarding feedback?",
+      "What’s the backup plan if feedback doesn’t work out?",
+      "Do we need to loop anyone else in about feedback?",
+      "How will we measure success for feedback?",
+      "Let’s keep feedback simple and practical."
+    ]
+  },
+  {
+    "topic": "Negotiation",
+    "sentences": [
+      "Can we talk about negotiation later today?",
+      "Do you have a minute to chat about negotiation?",
+      "What’s your usual approach when it comes to negotiation?",
+      "I’ve run into a small problem with negotiation. Any ideas?",
+      "How do you normally handle negotiation in your day to day?",
+      "Could you give me a quick tip about negotiation?",
+      "I’m trying to get better at negotiation; what would you suggest?",
+      "I’ve got a question about negotiation—mind if I ask?",
+      "What’s the biggest mistake people make with negotiation?",
+      "Do you prefer a simple or detailed plan for negotiation?",
+      "I’m torn between two options for negotiation. What do you think?",
+      "If you had to explain negotiation to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with negotiation?",
+      "What’s the timeline we’re looking at for negotiation?",
+      "Could we set some expectations around negotiation?",
+      "I’d appreciate your feedback on negotiation.",
+      "Has anything changed recently regarding negotiation?",
+      "What’s the backup plan if negotiation doesn’t work out?",
+      "Do we need to loop anyone else in about negotiation?",
+      "How will we measure success for negotiation?",
+      "Let’s keep negotiation simple and practical."
+    ]
+  },
+  {
+    "topic": "Job Interview",
+    "sentences": [
+      "Can we talk about job interview later today?",
+      "Do you have a minute to chat about job interview?",
+      "What’s your usual approach when it comes to job interview?",
+      "I’ve run into a small problem with job interview. Any ideas?",
+      "How do you normally handle job interview in your day to day?",
+      "Could you give me a quick tip about job interview?",
+      "I’m trying to get better at job interview; what would you suggest?",
+      "I’ve got a question about job interview—mind if I ask?",
+      "What’s the biggest mistake people make with job interview?",
+      "Do you prefer a simple or detailed plan for job interview?",
+      "I’m torn between two options for job interview. What do you think?",
+      "If you had to explain job interview to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with job interview?",
+      "What’s the timeline we’re looking at for job interview?",
+      "Could we set some expectations around job interview?",
+      "I’d appreciate your feedback on job interview.",
+      "Has anything changed recently regarding job interview?",
+      "What’s the backup plan if job interview doesn’t work out?",
+      "Do we need to loop anyone else in about job interview?",
+      "How will we measure success for job interview?",
+      "Let’s keep job interview simple and practical."
+    ]
+  },
+  {
+    "topic": "Office Culture",
+    "sentences": [
+      "Can we talk about office culture later today?",
+      "Do you have a minute to chat about office culture?",
+      "What’s your usual approach when it comes to office culture?",
+      "I’ve run into a small problem with office culture. Any ideas?",
+      "How do you normally handle office culture in your day to day?",
+      "Could you give me a quick tip about office culture?",
+      "I’m trying to get better at office culture; what would you suggest?",
+      "I’ve got a question about office culture—mind if I ask?",
+      "What’s the biggest mistake people make with office culture?",
+      "Do you prefer a simple or detailed plan for office culture?",
+      "I’m torn between two options for office culture. What do you think?",
+      "If you had to explain office culture to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with office culture?",
+      "What’s the timeline we’re looking at for office culture?",
+      "Could we set some expectations around office culture?",
+      "I’d appreciate your feedback on office culture.",
+      "Has anything changed recently regarding office culture?",
+      "What’s the backup plan if office culture doesn’t work out?",
+      "Do we need to loop anyone else in about office culture?",
+      "How will we measure success for office culture?",
+      "Let’s keep office culture simple and practical."
+    ]
+  },
+  {
+    "topic": "Deadlines",
+    "sentences": [
+      "Can we talk about deadlines later today?",
+      "Do you have a minute to chat about deadlines?",
+      "What’s your usual approach when it comes to deadlines?",
+      "I’ve run into a small problem with deadlines. Any ideas?",
+      "How do you normally handle deadlines in your day to day?",
+      "Could you give me a quick tip about deadlines?",
+      "I’m trying to get better at deadlines; what would you suggest?",
+      "I’ve got a question about deadlines—mind if I ask?",
+      "What’s the biggest mistake people make with deadlines?",
+      "Do you prefer a simple or detailed plan for deadlines?",
+      "I’m torn between two options for deadlines. What do you think?",
+      "If you had to explain deadlines to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with deadlines?",
+      "What’s the timeline we’re looking at for deadlines?",
+      "Could we set some expectations around deadlines?",
+      "I’d appreciate your feedback on deadlines.",
+      "Has anything changed recently regarding deadlines?",
+      "What’s the backup plan if deadlines doesn’t work out?",
+      "Do we need to loop anyone else in about deadlines?",
+      "How will we measure success for deadlines?",
+      "Let’s keep deadlines simple and practical."
+    ]
+  },
+  {
+    "topic": "Presentations",
+    "sentences": [
+      "Can we talk about presentations later today?",
+      "Do you have a minute to chat about presentations?",
+      "What’s your usual approach when it comes to presentations?",
+      "I’ve run into a small problem with presentations. Any ideas?",
+      "How do you normally handle presentations in your day to day?",
+      "Could you give me a quick tip about presentations?",
+      "I’m trying to get better at presentations; what would you suggest?",
+      "I’ve got a question about presentations—mind if I ask?",
+      "What’s the biggest mistake people make with presentations?",
+      "Do you prefer a simple or detailed plan for presentations?",
+      "I’m torn between two options for presentations. What do you think?",
+      "If you had to explain presentations to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with presentations?",
+      "What’s the timeline we’re looking at for presentations?",
+      "Could we set some expectations around presentations?",
+      "I’d appreciate your feedback on presentations.",
+      "Has anything changed recently regarding presentations?",
+      "What’s the backup plan if presentations doesn’t work out?",
+      "Do we need to loop anyone else in about presentations?",
+      "How will we measure success for presentations?",
+      "Let’s keep presentations simple and practical."
+    ]
+  },
+  {
+    "topic": "Emails",
+    "sentences": [
+      "Can we talk about emails later today?",
+      "Do you have a minute to chat about emails?",
+      "What’s your usual approach when it comes to emails?",
+      "I’ve run into a small problem with emails. Any ideas?",
+      "How do you normally handle emails in your day to day?",
+      "Could you give me a quick tip about emails?",
+      "I’m trying to get better at emails; what would you suggest?",
+      "I’ve got a question about emails—mind if I ask?",
+      "What’s the biggest mistake people make with emails?",
+      "Do you prefer a simple or detailed plan for emails?",
+      "I’m torn between two options for emails. What do you think?",
+      "If you had to explain emails to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with emails?",
+      "What’s the timeline we’re looking at for emails?",
+      "Could we set some expectations around emails?",
+      "I’d appreciate your feedback on emails.",
+      "Has anything changed recently regarding emails?",
+      "What’s the backup plan if emails doesn’t work out?",
+      "Do we need to loop anyone else in about emails?",
+      "How will we measure success for emails?",
+      "Let’s keep emails simple and practical."
+    ]
+  },
+  {
+    "topic": "Networking",
+    "sentences": [
+      "Can we talk about networking later today?",
+      "Do you have a minute to chat about networking?",
+      "What’s your usual approach when it comes to networking?",
+      "I’ve run into a small problem with networking. Any ideas?",
+      "How do you normally handle networking in your day to day?",
+      "Could you give me a quick tip about networking?",
+      "I’m trying to get better at networking; what would you suggest?",
+      "I’ve got a question about networking—mind if I ask?",
+      "What’s the biggest mistake people make with networking?",
+      "Do you prefer a simple or detailed plan for networking?",
+      "I’m torn between two options for networking. What do you think?",
+      "If you had to explain networking to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with networking?",
+      "What’s the timeline we’re looking at for networking?",
+      "Could we set some expectations around networking?",
+      "I’d appreciate your feedback on networking.",
+      "Has anything changed recently regarding networking?",
+      "What’s the backup plan if networking doesn’t work out?",
+      "Do we need to loop anyone else in about networking?",
+      "How will we measure success for networking?",
+      "Let’s keep networking simple and practical."
+    ]
+  },
+  {
+    "topic": "Remote Work",
+    "sentences": [
+      "Can we talk about remote work later today?",
+      "Do you have a minute to chat about remote work?",
+      "What’s your usual approach when it comes to remote work?",
+      "I’ve run into a small problem with remote work. Any ideas?",
+      "How do you normally handle remote work in your day to day?",
+      "Could you give me a quick tip about remote work?",
+      "I’m trying to get better at remote work; what would you suggest?",
+      "I’ve got a question about remote work—mind if I ask?",
+      "What’s the biggest mistake people make with remote work?",
+      "Do you prefer a simple or detailed plan for remote work?",
+      "I’m torn between two options for remote work. What do you think?",
+      "If you had to explain remote work to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with remote work?",
+      "What’s the timeline we’re looking at for remote work?",
+      "Could we set some expectations around remote work?",
+      "I’d appreciate your feedback on remote work.",
+      "Has anything changed recently regarding remote work?",
+      "What’s the backup plan if remote work doesn’t work out?",
+      "Do we need to loop anyone else in about remote work?",
+      "How will we measure success for remote work?",
+      "Let’s keep remote work simple and practical."
+    ]
+  },
+  {
+    "topic": "Time Management",
+    "sentences": [
+      "Can we talk about time management later today?",
+      "Do you have a minute to chat about time management?",
+      "What’s your usual approach when it comes to time management?",
+      "I’ve run into a small problem with time management. Any ideas?",
+      "How do you normally handle time management in your day to day?",
+      "Could you give me a quick tip about time management?",
+      "I’m trying to get better at time management; what would you suggest?",
+      "I’ve got a question about time management—mind if I ask?",
+      "What’s the biggest mistake people make with time management?",
+      "Do you prefer a simple or detailed plan for time management?",
+      "I’m torn between two options for time management. What do you think?",
+      "If you had to explain time management to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with time management?",
+      "What’s the timeline we’re looking at for time management?",
+      "Could we set some expectations around time management?",
+      "I’d appreciate your feedback on time management.",
+      "Has anything changed recently regarding time management?",
+      "What’s the backup plan if time management doesn’t work out?",
+      "Do we need to loop anyone else in about time management?",
+      "How will we measure success for time management?",
+      "Let’s keep time management simple and practical."
+    ]
+  },
+  {
+    "topic": "Hobbies",
+    "sentences": [
+      "Can we talk about hobbies later today?",
+      "Do you have a minute to chat about hobbies?",
+      "What’s your usual approach when it comes to hobbies?",
+      "I’ve run into a small problem with hobbies. Any ideas?",
+      "How do you normally handle hobbies in your day to day?",
+      "Could you give me a quick tip about hobbies?",
+      "I’m trying to get better at hobbies; what would you suggest?",
+      "I’ve got a question about hobbies—mind if I ask?",
+      "What’s the biggest mistake people make with hobbies?",
+      "Do you prefer a simple or detailed plan for hobbies?",
+      "I’m torn between two options for hobbies. What do you think?",
+      "If you had to explain hobbies to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with hobbies?",
+      "What’s the timeline we’re looking at for hobbies?",
+      "Could we set some expectations around hobbies?",
+      "I’d appreciate your feedback on hobbies.",
+      "Has anything changed recently regarding hobbies?",
+      "What’s the backup plan if hobbies doesn’t work out?",
+      "Do we need to loop anyone else in about hobbies?",
+      "How will we measure success for hobbies?",
+      "Let’s keep hobbies simple and practical."
+    ]
+  },
+  {
+    "topic": "Books & Reading",
+    "sentences": [
+      "Can we talk about books & reading later today?",
+      "Do you have a minute to chat about books & reading?",
+      "What’s your usual approach when it comes to books & reading?",
+      "I’ve run into a small problem with books & reading. Any ideas?",
+      "How do you normally handle books & reading in your day to day?",
+      "Could you give me a quick tip about books & reading?",
+      "I’m trying to get better at books & reading; what would you suggest?",
+      "I’ve got a question about books & reading—mind if I ask?",
+      "What’s the biggest mistake people make with books & reading?",
+      "Do you prefer a simple or detailed plan for books & reading?",
+      "I’m torn between two options for books & reading. What do you think?",
+      "If you had to explain books & reading to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with books & reading?",
+      "What’s the timeline we’re looking at for books & reading?",
+      "Could we set some expectations around books & reading?",
+      "I’d appreciate your feedback on books & reading.",
+      "Has anything changed recently regarding books & reading?",
+      "What’s the backup plan if books & reading doesn’t work out?",
+      "Do we need to loop anyone else in about books & reading?",
+      "How will we measure success for books & reading?",
+      "Let’s keep books & reading simple and practical."
+    ]
+  },
+  {
+    "topic": "Movies & TV",
+    "sentences": [
+      "Can we talk about movies & tv later today?",
+      "Do you have a minute to chat about movies & tv?",
+      "What’s your usual approach when it comes to movies & tv?",
+      "I’ve run into a small problem with movies & tv. Any ideas?",
+      "How do you normally handle movies & tv in your day to day?",
+      "Could you give me a quick tip about movies & tv?",
+      "I’m trying to get better at movies & tv; what would you suggest?",
+      "I’ve got a question about movies & tv—mind if I ask?",
+      "What’s the biggest mistake people make with movies & tv?",
+      "Do you prefer a simple or detailed plan for movies & tv?",
+      "I’m torn between two options for movies & tv. What do you think?",
+      "If you had to explain movies & tv to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with movies & tv?",
+      "What’s the timeline we’re looking at for movies & tv?",
+      "Could we set some expectations around movies & tv?",
+      "I’d appreciate your feedback on movies & tv.",
+      "Has anything changed recently regarding movies & tv?",
+      "What’s the backup plan if movies & tv doesn’t work out?",
+      "Do we need to loop anyone else in about movies & tv?",
+      "How will we measure success for movies & tv?",
+      "Let’s keep movies & tv simple and practical."
+    ]
+  },
+  {
+    "topic": "Music",
+    "sentences": [
+      "Can we talk about music later today?",
+      "Do you have a minute to chat about music?",
+      "What’s your usual approach when it comes to music?",
+      "I’ve run into a small problem with music. Any ideas?",
+      "How do you normally handle music in your day to day?",
+      "Could you give me a quick tip about music?",
+      "I’m trying to get better at music; what would you suggest?",
+      "I’ve got a question about music—mind if I ask?",
+      "What’s the biggest mistake people make with music?",
+      "Do you prefer a simple or detailed plan for music?",
+      "I’m torn between two options for music. What do you think?",
+      "If you had to explain music to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with music?",
+      "What’s the timeline we’re looking at for music?",
+      "Could we set some expectations around music?",
+      "I’d appreciate your feedback on music.",
+      "Has anything changed recently regarding music?",
+      "What’s the backup plan if music doesn’t work out?",
+      "Do we need to loop anyone else in about music?",
+      "How will we measure success for music?",
+      "Let’s keep music simple and practical."
+    ]
+  },
+  {
+    "topic": "Sports",
+    "sentences": [
+      "Can we talk about sports later today?",
+      "Do you have a minute to chat about sports?",
+      "What’s your usual approach when it comes to sports?",
+      "I’ve run into a small problem with sports. Any ideas?",
+      "How do you normally handle sports in your day to day?",
+      "Could you give me a quick tip about sports?",
+      "I’m trying to get better at sports; what would you suggest?",
+      "I’ve got a question about sports—mind if I ask?",
+      "What’s the biggest mistake people make with sports?",
+      "Do you prefer a simple or detailed plan for sports?",
+      "I’m torn between two options for sports. What do you think?",
+      "If you had to explain sports to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with sports?",
+      "What’s the timeline we’re looking at for sports?",
+      "Could we set some expectations around sports?",
+      "I’d appreciate your feedback on sports.",
+      "Has anything changed recently regarding sports?",
+      "What’s the backup plan if sports doesn’t work out?",
+      "Do we need to loop anyone else in about sports?",
+      "How will we measure success for sports?",
+      "Let’s keep sports simple and practical."
+    ]
+  },
+  {
+    "topic": "Hiking & Outdoors",
+    "sentences": [
+      "Can we talk about hiking & outdoors later today?",
+      "Do you have a minute to chat about hiking & outdoors?",
+      "What’s your usual approach when it comes to hiking & outdoors?",
+      "I’ve run into a small problem with hiking & outdoors. Any ideas?",
+      "How do you normally handle hiking & outdoors in your day to day?",
+      "Could you give me a quick tip about hiking & outdoors?",
+      "I’m trying to get better at hiking & outdoors; what would you suggest?",
+      "I’ve got a question about hiking & outdoors—mind if I ask?",
+      "What’s the biggest mistake people make with hiking & outdoors?",
+      "Do you prefer a simple or detailed plan for hiking & outdoors?",
+      "I’m torn between two options for hiking & outdoors. What do you think?",
+      "If you had to explain hiking & outdoors to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with hiking & outdoors?",
+      "What’s the timeline we’re looking at for hiking & outdoors?",
+      "Could we set some expectations around hiking & outdoors?",
+      "I’d appreciate your feedback on hiking & outdoors.",
+      "Has anything changed recently regarding hiking & outdoors?",
+      "What’s the backup plan if hiking & outdoors doesn’t work out?",
+      "Do we need to loop anyone else in about hiking & outdoors?",
+      "How will we measure success for hiking & outdoors?",
+      "Let’s keep hiking & outdoors simple and practical."
+    ]
+  },
+  {
+    "topic": "Pets",
+    "sentences": [
+      "Can we talk about pets later today?",
+      "Do you have a minute to chat about pets?",
+      "What’s your usual approach when it comes to pets?",
+      "I’ve run into a small problem with pets. Any ideas?",
+      "How do you normally handle pets in your day to day?",
+      "Could you give me a quick tip about pets?",
+      "I’m trying to get better at pets; what would you suggest?",
+      "I’ve got a question about pets—mind if I ask?",
+      "What’s the biggest mistake people make with pets?",
+      "Do you prefer a simple or detailed plan for pets?",
+      "I’m torn between two options for pets. What do you think?",
+      "If you had to explain pets to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with pets?",
+      "What’s the timeline we’re looking at for pets?",
+      "Could we set some expectations around pets?",
+      "I’d appreciate your feedback on pets.",
+      "Has anything changed recently regarding pets?",
+      "What’s the backup plan if pets doesn’t work out?",
+      "Do we need to loop anyone else in about pets?",
+      "How will we measure success for pets?",
+      "Let’s keep pets simple and practical."
+    ]
+  },
+  {
+    "topic": "House Chores",
+    "sentences": [
+      "Can we talk about house chores later today?",
+      "Do you have a minute to chat about house chores?",
+      "What’s your usual approach when it comes to house chores?",
+      "I’ve run into a small problem with house chores. Any ideas?",
+      "How do you normally handle house chores in your day to day?",
+      "Could you give me a quick tip about house chores?",
+      "I’m trying to get better at house chores; what would you suggest?",
+      "I’ve got a question about house chores—mind if I ask?",
+      "What’s the biggest mistake people make with house chores?",
+      "Do you prefer a simple or detailed plan for house chores?",
+      "I’m torn between two options for house chores. What do you think?",
+      "If you had to explain house chores to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with house chores?",
+      "What’s the timeline we’re looking at for house chores?",
+      "Could we set some expectations around house chores?",
+      "I’d appreciate your feedback on house chores.",
+      "Has anything changed recently regarding house chores?",
+      "What’s the backup plan if house chores doesn’t work out?",
+      "Do we need to loop anyone else in about house chores?",
+      "How will we measure success for house chores?",
+      "Let’s keep house chores simple and practical."
+    ]
+  },
+  {
+    "topic": "Cleaning",
+    "sentences": [
+      "Can we talk about cleaning later today?",
+      "Do you have a minute to chat about cleaning?",
+      "What’s your usual approach when it comes to cleaning?",
+      "I’ve run into a small problem with cleaning. Any ideas?",
+      "How do you normally handle cleaning in your day to day?",
+      "Could you give me a quick tip about cleaning?",
+      "I’m trying to get better at cleaning; what would you suggest?",
+      "I’ve got a question about cleaning—mind if I ask?",
+      "What’s the biggest mistake people make with cleaning?",
+      "Do you prefer a simple or detailed plan for cleaning?",
+      "I’m torn between two options for cleaning. What do you think?",
+      "If you had to explain cleaning to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with cleaning?",
+      "What’s the timeline we’re looking at for cleaning?",
+      "Could we set some expectations around cleaning?",
+      "I’d appreciate your feedback on cleaning.",
+      "Has anything changed recently regarding cleaning?",
+      "What’s the backup plan if cleaning doesn’t work out?",
+      "Do we need to loop anyone else in about cleaning?",
+      "How will we measure success for cleaning?",
+      "Let’s keep cleaning simple and practical."
+    ]
+  },
+  {
+    "topic": "Laundry",
+    "sentences": [
+      "Can we talk about laundry later today?",
+      "Do you have a minute to chat about laundry?",
+      "What’s your usual approach when it comes to laundry?",
+      "I’ve run into a small problem with laundry. Any ideas?",
+      "How do you normally handle laundry in your day to day?",
+      "Could you give me a quick tip about laundry?",
+      "I’m trying to get better at laundry; what would you suggest?",
+      "I’ve got a question about laundry—mind if I ask?",
+      "What’s the biggest mistake people make with laundry?",
+      "Do you prefer a simple or detailed plan for laundry?",
+      "I’m torn between two options for laundry. What do you think?",
+      "If you had to explain laundry to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with laundry?",
+      "What’s the timeline we’re looking at for laundry?",
+      "Could we set some expectations around laundry?",
+      "I’d appreciate your feedback on laundry.",
+      "Has anything changed recently regarding laundry?",
+      "What’s the backup plan if laundry doesn’t work out?",
+      "Do we need to loop anyone else in about laundry?",
+      "How will we measure success for laundry?",
+      "Let’s keep laundry simple and practical."
+    ]
+  },
+  {
+    "topic": "Cooking",
+    "sentences": [
+      "Can we talk about cooking later today?",
+      "Do you have a minute to chat about cooking?",
+      "What’s your usual approach when it comes to cooking?",
+      "I’ve run into a small problem with cooking. Any ideas?",
+      "How do you normally handle cooking in your day to day?",
+      "Could you give me a quick tip about cooking?",
+      "I’m trying to get better at cooking; what would you suggest?",
+      "I’ve got a question about cooking—mind if I ask?",
+      "What’s the biggest mistake people make with cooking?",
+      "Do you prefer a simple or detailed plan for cooking?",
+      "I’m torn between two options for cooking. What do you think?",
+      "If you had to explain cooking to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with cooking?",
+      "What’s the timeline we’re looking at for cooking?",
+      "Could we set some expectations around cooking?",
+      "I’d appreciate your feedback on cooking.",
+      "Has anything changed recently regarding cooking?",
+      "What’s the backup plan if cooking doesn’t work out?",
+      "Do we need to loop anyone else in about cooking?",
+      "How will we measure success for cooking?",
+      "Let’s keep cooking simple and practical."
+    ]
+  },
+  {
+    "topic": "Birthdays",
+    "sentences": [
+      "Can we talk about birthdays later today?",
+      "Do you have a minute to chat about birthdays?",
+      "What’s your usual approach when it comes to birthdays?",
+      "I’ve run into a small problem with birthdays. Any ideas?",
+      "How do you normally handle birthdays in your day to day?",
+      "Could you give me a quick tip about birthdays?",
+      "I’m trying to get better at birthdays; what would you suggest?",
+      "I’ve got a question about birthdays—mind if I ask?",
+      "What’s the biggest mistake people make with birthdays?",
+      "Do you prefer a simple or detailed plan for birthdays?",
+      "I’m torn between two options for birthdays. What do you think?",
+      "If you had to explain birthdays to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with birthdays?",
+      "What’s the timeline we’re looking at for birthdays?",
+      "Could we set some expectations around birthdays?",
+      "I’d appreciate your feedback on birthdays.",
+      "Has anything changed recently regarding birthdays?",
+      "What’s the backup plan if birthdays doesn’t work out?",
+      "Do we need to loop anyone else in about birthdays?",
+      "How will we measure success for birthdays?",
+      "Let’s keep birthdays simple and practical."
+    ]
+  },
+  {
+    "topic": "Holidays",
+    "sentences": [
+      "Can we talk about holidays later today?",
+      "Do you have a minute to chat about holidays?",
+      "What’s your usual approach when it comes to holidays?",
+      "I’ve run into a small problem with holidays. Any ideas?",
+      "How do you normally handle holidays in your day to day?",
+      "Could you give me a quick tip about holidays?",
+      "I’m trying to get better at holidays; what would you suggest?",
+      "I’ve got a question about holidays—mind if I ask?",
+      "What’s the biggest mistake people make with holidays?",
+      "Do you prefer a simple or detailed plan for holidays?",
+      "I’m torn between two options for holidays. What do you think?",
+      "If you had to explain holidays to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with holidays?",
+      "What’s the timeline we’re looking at for holidays?",
+      "Could we set some expectations around holidays?",
+      "I’d appreciate your feedback on holidays.",
+      "Has anything changed recently regarding holidays?",
+      "What’s the backup plan if holidays doesn’t work out?",
+      "Do we need to loop anyone else in about holidays?",
+      "How will we measure success for holidays?",
+      "Let’s keep holidays simple and practical."
+    ]
+  },
+  {
+    "topic": "Gifts",
+    "sentences": [
+      "Can we talk about gifts later today?",
+      "Do you have a minute to chat about gifts?",
+      "What’s your usual approach when it comes to gifts?",
+      "I’ve run into a small problem with gifts. Any ideas?",
+      "How do you normally handle gifts in your day to day?",
+      "Could you give me a quick tip about gifts?",
+      "I’m trying to get better at gifts; what would you suggest?",
+      "I’ve got a question about gifts—mind if I ask?",
+      "What’s the biggest mistake people make with gifts?",
+      "Do you prefer a simple or detailed plan for gifts?",
+      "I’m torn between two options for gifts. What do you think?",
+      "If you had to explain gifts to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with gifts?",
+      "What’s the timeline we’re looking at for gifts?",
+      "Could we set some expectations around gifts?",
+      "I’d appreciate your feedback on gifts.",
+      "Has anything changed recently regarding gifts?",
+      "What’s the backup plan if gifts doesn’t work out?",
+      "Do we need to loop anyone else in about gifts?",
+      "How will we measure success for gifts?",
+      "Let’s keep gifts simple and practical."
+    ]
+  },
+  {
+    "topic": "Dating",
+    "sentences": [
+      "Can we talk about dating later today?",
+      "Do you have a minute to chat about dating?",
+      "What’s your usual approach when it comes to dating?",
+      "I’ve run into a small problem with dating. Any ideas?",
+      "How do you normally handle dating in your day to day?",
+      "Could you give me a quick tip about dating?",
+      "I’m trying to get better at dating; what would you suggest?",
+      "I’ve got a question about dating—mind if I ask?",
+      "What’s the biggest mistake people make with dating?",
+      "Do you prefer a simple or detailed plan for dating?",
+      "I’m torn between two options for dating. What do you think?",
+      "If you had to explain dating to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with dating?",
+      "What’s the timeline we’re looking at for dating?",
+      "Could we set some expectations around dating?",
+      "I’d appreciate your feedback on dating.",
+      "Has anything changed recently regarding dating?",
+      "What’s the backup plan if dating doesn’t work out?",
+      "Do we need to loop anyone else in about dating?",
+      "How will we measure success for dating?",
+      "Let’s keep dating simple and practical."
+    ]
+  },
+  {
+    "topic": "Relationships",
+    "sentences": [
+      "Can we talk about relationships later today?",
+      "Do you have a minute to chat about relationships?",
+      "What’s your usual approach when it comes to relationships?",
+      "I’ve run into a small problem with relationships. Any ideas?",
+      "How do you normally handle relationships in your day to day?",
+      "Could you give me a quick tip about relationships?",
+      "I’m trying to get better at relationships; what would you suggest?",
+      "I’ve got a question about relationships—mind if I ask?",
+      "What’s the biggest mistake people make with relationships?",
+      "Do you prefer a simple or detailed plan for relationships?",
+      "I’m torn between two options for relationships. What do you think?",
+      "If you had to explain relationships to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with relationships?",
+      "What’s the timeline we’re looking at for relationships?",
+      "Could we set some expectations around relationships?",
+      "I’d appreciate your feedback on relationships.",
+      "Has anything changed recently regarding relationships?",
+      "What’s the backup plan if relationships doesn’t work out?",
+      "Do we need to loop anyone else in about relationships?",
+      "How will we measure success for relationships?",
+      "Let’s keep relationships simple and practical."
+    ]
+  },
+  {
+    "topic": "Breakups",
+    "sentences": [
+      "Can we talk about breakups later today?",
+      "Do you have a minute to chat about breakups?",
+      "What’s your usual approach when it comes to breakups?",
+      "I’ve run into a small problem with breakups. Any ideas?",
+      "How do you normally handle breakups in your day to day?",
+      "Could you give me a quick tip about breakups?",
+      "I’m trying to get better at breakups; what would you suggest?",
+      "I’ve got a question about breakups—mind if I ask?",
+      "What’s the biggest mistake people make with breakups?",
+      "Do you prefer a simple or detailed plan for breakups?",
+      "I’m torn between two options for breakups. What do you think?",
+      "If you had to explain breakups to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with breakups?",
+      "What’s the timeline we’re looking at for breakups?",
+      "Could we set some expectations around breakups?",
+      "I’d appreciate your feedback on breakups.",
+      "Has anything changed recently regarding breakups?",
+      "What’s the backup plan if breakups doesn’t work out?",
+      "Do we need to loop anyone else in about breakups?",
+      "How will we measure success for breakups?",
+      "Let’s keep breakups simple and practical."
+    ]
+  },
+  {
+    "topic": "Boundaries",
+    "sentences": [
+      "Can we talk about boundaries later today?",
+      "Do you have a minute to chat about boundaries?",
+      "What’s your usual approach when it comes to boundaries?",
+      "I’ve run into a small problem with boundaries. Any ideas?",
+      "How do you normally handle boundaries in your day to day?",
+      "Could you give me a quick tip about boundaries?",
+      "I’m trying to get better at boundaries; what would you suggest?",
+      "I’ve got a question about boundaries—mind if I ask?",
+      "What’s the biggest mistake people make with boundaries?",
+      "Do you prefer a simple or detailed plan for boundaries?",
+      "I’m torn between two options for boundaries. What do you think?",
+      "If you had to explain boundaries to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with boundaries?",
+      "What’s the timeline we’re looking at for boundaries?",
+      "Could we set some expectations around boundaries?",
+      "I’d appreciate your feedback on boundaries.",
+      "Has anything changed recently regarding boundaries?",
+      "What’s the backup plan if boundaries doesn’t work out?",
+      "Do we need to loop anyone else in about boundaries?",
+      "How will we measure success for boundaries?",
+      "Let’s keep boundaries simple and practical."
+    ]
+  },
+  {
+    "topic": "Roommates",
+    "sentences": [
+      "Can we talk about roommates later today?",
+      "Do you have a minute to chat about roommates?",
+      "What’s your usual approach when it comes to roommates?",
+      "I’ve run into a small problem with roommates. Any ideas?",
+      "How do you normally handle roommates in your day to day?",
+      "Could you give me a quick tip about roommates?",
+      "I’m trying to get better at roommates; what would you suggest?",
+      "I’ve got a question about roommates—mind if I ask?",
+      "What’s the biggest mistake people make with roommates?",
+      "Do you prefer a simple or detailed plan for roommates?",
+      "I’m torn between two options for roommates. What do you think?",
+      "If you had to explain roommates to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with roommates?",
+      "What’s the timeline we’re looking at for roommates?",
+      "Could we set some expectations around roommates?",
+      "I’d appreciate your feedback on roommates.",
+      "Has anything changed recently regarding roommates?",
+      "What’s the backup plan if roommates doesn’t work out?",
+      "Do we need to loop anyone else in about roommates?",
+      "How will we measure success for roommates?",
+      "Let’s keep roommates simple and practical."
+    ]
+  },
+  {
+    "topic": "Landlords",
+    "sentences": [
+      "Can we talk about landlords later today?",
+      "Do you have a minute to chat about landlords?",
+      "What’s your usual approach when it comes to landlords?",
+      "I’ve run into a small problem with landlords. Any ideas?",
+      "How do you normally handle landlords in your day to day?",
+      "Could you give me a quick tip about landlords?",
+      "I’m trying to get better at landlords; what would you suggest?",
+      "I’ve got a question about landlords—mind if I ask?",
+      "What’s the biggest mistake people make with landlords?",
+      "Do you prefer a simple or detailed plan for landlords?",
+      "I’m torn between two options for landlords. What do you think?",
+      "If you had to explain landlords to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with landlords?",
+      "What’s the timeline we’re looking at for landlords?",
+      "Could we set some expectations around landlords?",
+      "I’d appreciate your feedback on landlords.",
+      "Has anything changed recently regarding landlords?",
+      "What’s the backup plan if landlords doesn’t work out?",
+      "Do we need to loop anyone else in about landlords?",
+      "How will we measure success for landlords?",
+      "Let’s keep landlords simple and practical."
+    ]
+  },
+  {
+    "topic": "Utilities",
+    "sentences": [
+      "Can we talk about utilities later today?",
+      "Do you have a minute to chat about utilities?",
+      "What’s your usual approach when it comes to utilities?",
+      "I’ve run into a small problem with utilities. Any ideas?",
+      "How do you normally handle utilities in your day to day?",
+      "Could you give me a quick tip about utilities?",
+      "I’m trying to get better at utilities; what would you suggest?",
+      "I’ve got a question about utilities—mind if I ask?",
+      "What’s the biggest mistake people make with utilities?",
+      "Do you prefer a simple or detailed plan for utilities?",
+      "I’m torn between two options for utilities. What do you think?",
+      "If you had to explain utilities to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with utilities?",
+      "What’s the timeline we’re looking at for utilities?",
+      "Could we set some expectations around utilities?",
+      "I’d appreciate your feedback on utilities.",
+      "Has anything changed recently regarding utilities?",
+      "What’s the backup plan if utilities doesn’t work out?",
+      "Do we need to loop anyone else in about utilities?",
+      "How will we measure success for utilities?",
+      "Let’s keep utilities simple and practical."
+    ]
+  },
+  {
+    "topic": "Internet Service",
+    "sentences": [
+      "Can we talk about internet service later today?",
+      "Do you have a minute to chat about internet service?",
+      "What’s your usual approach when it comes to internet service?",
+      "I’ve run into a small problem with internet service. Any ideas?",
+      "How do you normally handle internet service in your day to day?",
+      "Could you give me a quick tip about internet service?",
+      "I’m trying to get better at internet service; what would you suggest?",
+      "I’ve got a question about internet service—mind if I ask?",
+      "What’s the biggest mistake people make with internet service?",
+      "Do you prefer a simple or detailed plan for internet service?",
+      "I’m torn between two options for internet service. What do you think?",
+      "If you had to explain internet service to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with internet service?",
+      "What’s the timeline we’re looking at for internet service?",
+      "Could we set some expectations around internet service?",
+      "I’d appreciate your feedback on internet service.",
+      "Has anything changed recently regarding internet service?",
+      "What’s the backup plan if internet service doesn’t work out?",
+      "Do we need to loop anyone else in about internet service?",
+      "How will we measure success for internet service?",
+      "Let’s keep internet service simple and practical."
+    ]
+  },
+  {
+    "topic": "Repairs",
+    "sentences": [
+      "Can we talk about repairs later today?",
+      "Do you have a minute to chat about repairs?",
+      "What’s your usual approach when it comes to repairs?",
+      "I’ve run into a small problem with repairs. Any ideas?",
+      "How do you normally handle repairs in your day to day?",
+      "Could you give me a quick tip about repairs?",
+      "I’m trying to get better at repairs; what would you suggest?",
+      "I’ve got a question about repairs—mind if I ask?",
+      "What’s the biggest mistake people make with repairs?",
+      "Do you prefer a simple or detailed plan for repairs?",
+      "I’m torn between two options for repairs. What do you think?",
+      "If you had to explain repairs to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with repairs?",
+      "What’s the timeline we’re looking at for repairs?",
+      "Could we set some expectations around repairs?",
+      "I’d appreciate your feedback on repairs.",
+      "Has anything changed recently regarding repairs?",
+      "What’s the backup plan if repairs doesn’t work out?",
+      "Do we need to loop anyone else in about repairs?",
+      "How will we measure success for repairs?",
+      "Let’s keep repairs simple and practical."
+    ]
+  },
+  {
+    "topic": "Emergencies",
+    "sentences": [
+      "Can we talk about emergencies later today?",
+      "Do you have a minute to chat about emergencies?",
+      "What’s your usual approach when it comes to emergencies?",
+      "I’ve run into a small problem with emergencies. Any ideas?",
+      "How do you normally handle emergencies in your day to day?",
+      "Could you give me a quick tip about emergencies?",
+      "I’m trying to get better at emergencies; what would you suggest?",
+      "I’ve got a question about emergencies—mind if I ask?",
+      "What’s the biggest mistake people make with emergencies?",
+      "Do you prefer a simple or detailed plan for emergencies?",
+      "I’m torn between two options for emergencies. What do you think?",
+      "If you had to explain emergencies to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with emergencies?",
+      "What’s the timeline we’re looking at for emergencies?",
+      "Could we set some expectations around emergencies?",
+      "I’d appreciate your feedback on emergencies.",
+      "Has anything changed recently regarding emergencies?",
+      "What’s the backup plan if emergencies doesn’t work out?",
+      "Do we need to loop anyone else in about emergencies?",
+      "How will we measure success for emergencies?",
+      "Let’s keep emergencies simple and practical."
+    ]
+  },
+  {
+    "topic": "Police & Safety",
+    "sentences": [
+      "Can we talk about police & safety later today?",
+      "Do you have a minute to chat about police & safety?",
+      "What’s your usual approach when it comes to police & safety?",
+      "I’ve run into a small problem with police & safety. Any ideas?",
+      "How do you normally handle police & safety in your day to day?",
+      "Could you give me a quick tip about police & safety?",
+      "I’m trying to get better at police & safety; what would you suggest?",
+      "I’ve got a question about police & safety—mind if I ask?",
+      "What’s the biggest mistake people make with police & safety?",
+      "Do you prefer a simple or detailed plan for police & safety?",
+      "I’m torn between two options for police & safety. What do you think?",
+      "If you had to explain police & safety to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with police & safety?",
+      "What’s the timeline we’re looking at for police & safety?",
+      "Could we set some expectations around police & safety?",
+      "I’d appreciate your feedback on police & safety.",
+      "Has anything changed recently regarding police & safety?",
+      "What’s the backup plan if police & safety doesn’t work out?",
+      "Do we need to loop anyone else in about police & safety?",
+      "How will we measure success for police & safety?",
+      "Let’s keep police & safety simple and practical."
+    ]
+  },
+  {
+    "topic": "Pharmacy",
+    "sentences": [
+      "Can we talk about pharmacy later today?",
+      "Do you have a minute to chat about pharmacy?",
+      "What’s your usual approach when it comes to pharmacy?",
+      "I’ve run into a small problem with pharmacy. Any ideas?",
+      "How do you normally handle pharmacy in your day to day?",
+      "Could you give me a quick tip about pharmacy?",
+      "I’m trying to get better at pharmacy; what would you suggest?",
+      "I’ve got a question about pharmacy—mind if I ask?",
+      "What’s the biggest mistake people make with pharmacy?",
+      "Do you prefer a simple or detailed plan for pharmacy?",
+      "I’m torn between two options for pharmacy. What do you think?",
+      "If you had to explain pharmacy to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with pharmacy?",
+      "What’s the timeline we’re looking at for pharmacy?",
+      "Could we set some expectations around pharmacy?",
+      "I’d appreciate your feedback on pharmacy.",
+      "Has anything changed recently regarding pharmacy?",
+      "What’s the backup plan if pharmacy doesn’t work out?",
+      "Do we need to loop anyone else in about pharmacy?",
+      "How will we measure success for pharmacy?",
+      "Let’s keep pharmacy simple and practical."
+    ]
+  },
+  {
+    "topic": "Insurance",
+    "sentences": [
+      "Can we talk about insurance later today?",
+      "Do you have a minute to chat about insurance?",
+      "What’s your usual approach when it comes to insurance?",
+      "I’ve run into a small problem with insurance. Any ideas?",
+      "How do you normally handle insurance in your day to day?",
+      "Could you give me a quick tip about insurance?",
+      "I’m trying to get better at insurance; what would you suggest?",
+      "I’ve got a question about insurance—mind if I ask?",
+      "What’s the biggest mistake people make with insurance?",
+      "Do you prefer a simple or detailed plan for insurance?",
+      "I’m torn between two options for insurance. What do you think?",
+      "If you had to explain insurance to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with insurance?",
+      "What’s the timeline we’re looking at for insurance?",
+      "Could we set some expectations around insurance?",
+      "I’d appreciate your feedback on insurance.",
+      "Has anything changed recently regarding insurance?",
+      "What’s the backup plan if insurance doesn’t work out?",
+      "Do we need to loop anyone else in about insurance?",
+      "How will we measure success for insurance?",
+      "Let’s keep insurance simple and practical."
+    ]
+  },
+  {
+    "topic": "Taxes",
+    "sentences": [
+      "Can we talk about taxes later today?",
+      "Do you have a minute to chat about taxes?",
+      "What’s your usual approach when it comes to taxes?",
+      "I’ve run into a small problem with taxes. Any ideas?",
+      "How do you normally handle taxes in your day to day?",
+      "Could you give me a quick tip about taxes?",
+      "I’m trying to get better at taxes; what would you suggest?",
+      "I’ve got a question about taxes—mind if I ask?",
+      "What’s the biggest mistake people make with taxes?",
+      "Do you prefer a simple or detailed plan for taxes?",
+      "I’m torn between two options for taxes. What do you think?",
+      "If you had to explain taxes to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with taxes?",
+      "What’s the timeline we’re looking at for taxes?",
+      "Could we set some expectations around taxes?",
+      "I’d appreciate your feedback on taxes.",
+      "Has anything changed recently regarding taxes?",
+      "What’s the backup plan if taxes doesn’t work out?",
+      "Do we need to loop anyone else in about taxes?",
+      "How will we measure success for taxes?",
+      "Let’s keep taxes simple and practical."
+    ]
+  },
+  {
+    "topic": "Banking Issues",
+    "sentences": [
+      "Can we talk about banking issues later today?",
+      "Do you have a minute to chat about banking issues?",
+      "What’s your usual approach when it comes to banking issues?",
+      "I’ve run into a small problem with banking issues. Any ideas?",
+      "How do you normally handle banking issues in your day to day?",
+      "Could you give me a quick tip about banking issues?",
+      "I’m trying to get better at banking issues; what would you suggest?",
+      "I’ve got a question about banking issues—mind if I ask?",
+      "What’s the biggest mistake people make with banking issues?",
+      "Do you prefer a simple or detailed plan for banking issues?",
+      "I’m torn between two options for banking issues. What do you think?",
+      "If you had to explain banking issues to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with banking issues?",
+      "What’s the timeline we’re looking at for banking issues?",
+      "Could we set some expectations around banking issues?",
+      "I’d appreciate your feedback on banking issues.",
+      "Has anything changed recently regarding banking issues?",
+      "What’s the backup plan if banking issues doesn’t work out?",
+      "Do we need to loop anyone else in about banking issues?",
+      "How will we measure success for banking issues?",
+      "Let’s keep banking issues simple and practical."
+    ]
+  },
+  {
+    "topic": "Credit Cards",
+    "sentences": [
+      "Can we talk about credit cards later today?",
+      "Do you have a minute to chat about credit cards?",
+      "What’s your usual approach when it comes to credit cards?",
+      "I’ve run into a small problem with credit cards. Any ideas?",
+      "How do you normally handle credit cards in your day to day?",
+      "Could you give me a quick tip about credit cards?",
+      "I’m trying to get better at credit cards; what would you suggest?",
+      "I’ve got a question about credit cards—mind if I ask?",
+      "What’s the biggest mistake people make with credit cards?",
+      "Do you prefer a simple or detailed plan for credit cards?",
+      "I’m torn between two options for credit cards. What do you think?",
+      "If you had to explain credit cards to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with credit cards?",
+      "What’s the timeline we’re looking at for credit cards?",
+      "Could we set some expectations around credit cards?",
+      "I’d appreciate your feedback on credit cards.",
+      "Has anything changed recently regarding credit cards?",
+      "What’s the backup plan if credit cards doesn’t work out?",
+      "Do we need to loop anyone else in about credit cards?",
+      "How will we measure success for credit cards?",
+      "Let’s keep credit cards simple and practical."
+    ]
+  },
+  {
+    "topic": "Subscriptions",
+    "sentences": [
+      "Can we talk about subscriptions later today?",
+      "Do you have a minute to chat about subscriptions?",
+      "What’s your usual approach when it comes to subscriptions?",
+      "I’ve run into a small problem with subscriptions. Any ideas?",
+      "How do you normally handle subscriptions in your day to day?",
+      "Could you give me a quick tip about subscriptions?",
+      "I’m trying to get better at subscriptions; what would you suggest?",
+      "I’ve got a question about subscriptions—mind if I ask?",
+      "What’s the biggest mistake people make with subscriptions?",
+      "Do you prefer a simple or detailed plan for subscriptions?",
+      "I’m torn between two options for subscriptions. What do you think?",
+      "If you had to explain subscriptions to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with subscriptions?",
+      "What’s the timeline we’re looking at for subscriptions?",
+      "Could we set some expectations around subscriptions?",
+      "I’d appreciate your feedback on subscriptions.",
+      "Has anything changed recently regarding subscriptions?",
+      "What’s the backup plan if subscriptions doesn’t work out?",
+      "Do we need to loop anyone else in about subscriptions?",
+      "How will we measure success for subscriptions?",
+      "Let’s keep subscriptions simple and practical."
+    ]
+  },
+  {
+    "topic": "Refunds & Returns",
+    "sentences": [
+      "Can we talk about refunds & returns later today?",
+      "Do you have a minute to chat about refunds & returns?",
+      "What’s your usual approach when it comes to refunds & returns?",
+      "I’ve run into a small problem with refunds & returns. Any ideas?",
+      "How do you normally handle refunds & returns in your day to day?",
+      "Could you give me a quick tip about refunds & returns?",
+      "I’m trying to get better at refunds & returns; what would you suggest?",
+      "I’ve got a question about refunds & returns—mind if I ask?",
+      "What’s the biggest mistake people make with refunds & returns?",
+      "Do you prefer a simple or detailed plan for refunds & returns?",
+      "I’m torn between two options for refunds & returns. What do you think?",
+      "If you had to explain refunds & returns to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with refunds & returns?",
+      "What’s the timeline we’re looking at for refunds & returns?",
+      "Could we set some expectations around refunds & returns?",
+      "I’d appreciate your feedback on refunds & returns.",
+      "Has anything changed recently regarding refunds & returns?",
+      "What’s the backup plan if refunds & returns doesn’t work out?",
+      "Do we need to loop anyone else in about refunds & returns?",
+      "How will we measure success for refunds & returns?",
+      "Let’s keep refunds & returns simple and practical."
+    ]
+  },
+  {
+    "topic": "Customer Service",
+    "sentences": [
+      "Can we talk about customer service later today?",
+      "Do you have a minute to chat about customer service?",
+      "What’s your usual approach when it comes to customer service?",
+      "I’ve run into a small problem with customer service. Any ideas?",
+      "How do you normally handle customer service in your day to day?",
+      "Could you give me a quick tip about customer service?",
+      "I’m trying to get better at customer service; what would you suggest?",
+      "I’ve got a question about customer service—mind if I ask?",
+      "What’s the biggest mistake people make with customer service?",
+      "Do you prefer a simple or detailed plan for customer service?",
+      "I’m torn between two options for customer service. What do you think?",
+      "If you had to explain customer service to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with customer service?",
+      "What’s the timeline we’re looking at for customer service?",
+      "Could we set some expectations around customer service?",
+      "I’d appreciate your feedback on customer service.",
+      "Has anything changed recently regarding customer service?",
+      "What’s the backup plan if customer service doesn’t work out?",
+      "Do we need to loop anyone else in about customer service?",
+      "How will we measure success for customer service?",
+      "Let’s keep customer service simple and practical."
+    ]
+  },
+  {
+    "topic": "Beauty & Haircuts",
+    "sentences": [
+      "Can we talk about beauty & haircuts later today?",
+      "Do you have a minute to chat about beauty & haircuts?",
+      "What’s your usual approach when it comes to beauty & haircuts?",
+      "I’ve run into a small problem with beauty & haircuts. Any ideas?",
+      "How do you normally handle beauty & haircuts in your day to day?",
+      "Could you give me a quick tip about beauty & haircuts?",
+      "I’m trying to get better at beauty & haircuts; what would you suggest?",
+      "I’ve got a question about beauty & haircuts—mind if I ask?",
+      "What’s the biggest mistake people make with beauty & haircuts?",
+      "Do you prefer a simple or detailed plan for beauty & haircuts?",
+      "I’m torn between two options for beauty & haircuts. What do you think?",
+      "If you had to explain beauty & haircuts to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with beauty & haircuts?",
+      "What’s the timeline we’re looking at for beauty & haircuts?",
+      "Could we set some expectations around beauty & haircuts?",
+      "I’d appreciate your feedback on beauty & haircuts.",
+      "Has anything changed recently regarding beauty & haircuts?",
+      "What’s the backup plan if beauty & haircuts doesn’t work out?",
+      "Do we need to loop anyone else in about beauty & haircuts?",
+      "How will we measure success for beauty & haircuts?",
+      "Let’s keep beauty & haircuts simple and practical."
+    ]
+  },
+  {
+    "topic": "Fashion & Clothes",
+    "sentences": [
+      "Can we talk about fashion & clothes later today?",
+      "Do you have a minute to chat about fashion & clothes?",
+      "What’s your usual approach when it comes to fashion & clothes?",
+      "I’ve run into a small problem with fashion & clothes. Any ideas?",
+      "How do you normally handle fashion & clothes in your day to day?",
+      "Could you give me a quick tip about fashion & clothes?",
+      "I’m trying to get better at fashion & clothes; what would you suggest?",
+      "I’ve got a question about fashion & clothes—mind if I ask?",
+      "What’s the biggest mistake people make with fashion & clothes?",
+      "Do you prefer a simple or detailed plan for fashion & clothes?",
+      "I’m torn between two options for fashion & clothes. What do you think?",
+      "If you had to explain fashion & clothes to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with fashion & clothes?",
+      "What’s the timeline we’re looking at for fashion & clothes?",
+      "Could we set some expectations around fashion & clothes?",
+      "I’d appreciate your feedback on fashion & clothes.",
+      "Has anything changed recently regarding fashion & clothes?",
+      "What’s the backup plan if fashion & clothes doesn’t work out?",
+      "Do we need to loop anyone else in about fashion & clothes?",
+      "How will we measure success for fashion & clothes?",
+      "Let’s keep fashion & clothes simple and practical."
+    ]
+  },
+  {
+    "topic": "Weather Emergencies",
+    "sentences": [
+      "Can we talk about weather emergencies later today?",
+      "Do you have a minute to chat about weather emergencies?",
+      "What’s your usual approach when it comes to weather emergencies?",
+      "I’ve run into a small problem with weather emergencies. Any ideas?",
+      "How do you normally handle weather emergencies in your day to day?",
+      "Could you give me a quick tip about weather emergencies?",
+      "I’m trying to get better at weather emergencies; what would you suggest?",
+      "I’ve got a question about weather emergencies—mind if I ask?",
+      "What’s the biggest mistake people make with weather emergencies?",
+      "Do you prefer a simple or detailed plan for weather emergencies?",
+      "I’m torn between two options for weather emergencies. What do you think?",
+      "If you had to explain weather emergencies to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with weather emergencies?",
+      "What’s the timeline we’re looking at for weather emergencies?",
+      "Could we set some expectations around weather emergencies?",
+      "I’d appreciate your feedback on weather emergencies.",
+      "Has anything changed recently regarding weather emergencies?",
+      "What’s the backup plan if weather emergencies doesn’t work out?",
+      "Do we need to loop anyone else in about weather emergencies?",
+      "How will we measure success for weather emergencies?",
+      "Let’s keep weather emergencies simple and practical."
+    ]
+  },
+  {
+    "topic": "Natural Disasters",
+    "sentences": [
+      "Can we talk about natural disasters later today?",
+      "Do you have a minute to chat about natural disasters?",
+      "What’s your usual approach when it comes to natural disasters?",
+      "I’ve run into a small problem with natural disasters. Any ideas?",
+      "How do you normally handle natural disasters in your day to day?",
+      "Could you give me a quick tip about natural disasters?",
+      "I’m trying to get better at natural disasters; what would you suggest?",
+      "I’ve got a question about natural disasters—mind if I ask?",
+      "What’s the biggest mistake people make with natural disasters?",
+      "Do you prefer a simple or detailed plan for natural disasters?",
+      "I’m torn between two options for natural disasters. What do you think?",
+      "If you had to explain natural disasters to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with natural disasters?",
+      "What’s the timeline we’re looking at for natural disasters?",
+      "Could we set some expectations around natural disasters?",
+      "I’d appreciate your feedback on natural disasters.",
+      "Has anything changed recently regarding natural disasters?",
+      "What’s the backup plan if natural disasters doesn’t work out?",
+      "Do we need to loop anyone else in about natural disasters?",
+      "How will we measure success for natural disasters?",
+      "Let’s keep natural disasters simple and practical."
+    ]
+  },
+  {
+    "topic": "Volunteering",
+    "sentences": [
+      "Can we talk about volunteering later today?",
+      "Do you have a minute to chat about volunteering?",
+      "What’s your usual approach when it comes to volunteering?",
+      "I’ve run into a small problem with volunteering. Any ideas?",
+      "How do you normally handle volunteering in your day to day?",
+      "Could you give me a quick tip about volunteering?",
+      "I’m trying to get better at volunteering; what would you suggest?",
+      "I’ve got a question about volunteering—mind if I ask?",
+      "What’s the biggest mistake people make with volunteering?",
+      "Do you prefer a simple or detailed plan for volunteering?",
+      "I’m torn between two options for volunteering. What do you think?",
+      "If you had to explain volunteering to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with volunteering?",
+      "What’s the timeline we’re looking at for volunteering?",
+      "Could we set some expectations around volunteering?",
+      "I’d appreciate your feedback on volunteering.",
+      "Has anything changed recently regarding volunteering?",
+      "What’s the backup plan if volunteering doesn’t work out?",
+      "Do we need to loop anyone else in about volunteering?",
+      "How will we measure success for volunteering?",
+      "Let’s keep volunteering simple and practical."
+    ]
+  },
+  {
+    "topic": "Community Events",
+    "sentences": [
+      "Can we talk about community events later today?",
+      "Do you have a minute to chat about community events?",
+      "What’s your usual approach when it comes to community events?",
+      "I’ve run into a small problem with community events. Any ideas?",
+      "How do you normally handle community events in your day to day?",
+      "Could you give me a quick tip about community events?",
+      "I’m trying to get better at community events; what would you suggest?",
+      "I’ve got a question about community events—mind if I ask?",
+      "What’s the biggest mistake people make with community events?",
+      "Do you prefer a simple or detailed plan for community events?",
+      "I’m torn between two options for community events. What do you think?",
+      "If you had to explain community events to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with community events?",
+      "What’s the timeline we’re looking at for community events?",
+      "Could we set some expectations around community events?",
+      "I’d appreciate your feedback on community events.",
+      "Has anything changed recently regarding community events?",
+      "What’s the backup plan if community events doesn’t work out?",
+      "Do we need to loop anyone else in about community events?",
+      "How will we measure success for community events?",
+      "Let’s keep community events simple and practical."
+    ]
+  },
+  {
+    "topic": "Voting & Civic Life",
+    "sentences": [
+      "Can we talk about voting & civic life later today?",
+      "Do you have a minute to chat about voting & civic life?",
+      "What’s your usual approach when it comes to voting & civic life?",
+      "I’ve run into a small problem with voting & civic life. Any ideas?",
+      "How do you normally handle voting & civic life in your day to day?",
+      "Could you give me a quick tip about voting & civic life?",
+      "I’m trying to get better at voting & civic life; what would you suggest?",
+      "I’ve got a question about voting & civic life—mind if I ask?",
+      "What’s the biggest mistake people make with voting & civic life?",
+      "Do you prefer a simple or detailed plan for voting & civic life?",
+      "I’m torn between two options for voting & civic life. What do you think?",
+      "If you had to explain voting & civic life to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with voting & civic life?",
+      "What’s the timeline we’re looking at for voting & civic life?",
+      "Could we set some expectations around voting & civic life?",
+      "I’d appreciate your feedback on voting & civic life.",
+      "Has anything changed recently regarding voting & civic life?",
+      "What’s the backup plan if voting & civic life doesn’t work out?",
+      "Do we need to loop anyone else in about voting & civic life?",
+      "How will we measure success for voting & civic life?",
+      "Let’s keep voting & civic life simple and practical."
+    ]
+  },
+  {
+    "topic": "Libraries",
+    "sentences": [
+      "Can we talk about libraries later today?",
+      "Do you have a minute to chat about libraries?",
+      "What’s your usual approach when it comes to libraries?",
+      "I’ve run into a small problem with libraries. Any ideas?",
+      "How do you normally handle libraries in your day to day?",
+      "Could you give me a quick tip about libraries?",
+      "I’m trying to get better at libraries; what would you suggest?",
+      "I’ve got a question about libraries—mind if I ask?",
+      "What’s the biggest mistake people make with libraries?",
+      "Do you prefer a simple or detailed plan for libraries?",
+      "I’m torn between two options for libraries. What do you think?",
+      "If you had to explain libraries to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with libraries?",
+      "What’s the timeline we’re looking at for libraries?",
+      "Could we set some expectations around libraries?",
+      "I’d appreciate your feedback on libraries.",
+      "Has anything changed recently regarding libraries?",
+      "What’s the backup plan if libraries doesn’t work out?",
+      "Do we need to loop anyone else in about libraries?",
+      "How will we measure success for libraries?",
+      "Let’s keep libraries simple and practical."
+    ]
+  },
+  {
+    "topic": "Museums",
+    "sentences": [
+      "Can we talk about museums later today?",
+      "Do you have a minute to chat about museums?",
+      "What’s your usual approach when it comes to museums?",
+      "I’ve run into a small problem with museums. Any ideas?",
+      "How do you normally handle museums in your day to day?",
+      "Could you give me a quick tip about museums?",
+      "I’m trying to get better at museums; what would you suggest?",
+      "I’ve got a question about museums—mind if I ask?",
+      "What’s the biggest mistake people make with museums?",
+      "Do you prefer a simple or detailed plan for museums?",
+      "I’m torn between two options for museums. What do you think?",
+      "If you had to explain museums to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with museums?",
+      "What’s the timeline we’re looking at for museums?",
+      "Could we set some expectations around museums?",
+      "I’d appreciate your feedback on museums.",
+      "Has anything changed recently regarding museums?",
+      "What’s the backup plan if museums doesn’t work out?",
+      "Do we need to loop anyone else in about museums?",
+      "How will we measure success for museums?",
+      "Let’s keep museums simple and practical."
+    ]
+  },
+  {
+    "topic": "Art Galleries",
+    "sentences": [
+      "Can we talk about art galleries later today?",
+      "Do you have a minute to chat about art galleries?",
+      "What’s your usual approach when it comes to art galleries?",
+      "I’ve run into a small problem with art galleries. Any ideas?",
+      "How do you normally handle art galleries in your day to day?",
+      "Could you give me a quick tip about art galleries?",
+      "I’m trying to get better at art galleries; what would you suggest?",
+      "I’ve got a question about art galleries—mind if I ask?",
+      "What’s the biggest mistake people make with art galleries?",
+      "Do you prefer a simple or detailed plan for art galleries?",
+      "I’m torn between two options for art galleries. What do you think?",
+      "If you had to explain art galleries to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with art galleries?",
+      "What’s the timeline we’re looking at for art galleries?",
+      "Could we set some expectations around art galleries?",
+      "I’d appreciate your feedback on art galleries.",
+      "Has anything changed recently regarding art galleries?",
+      "What’s the backup plan if art galleries doesn’t work out?",
+      "Do we need to loop anyone else in about art galleries?",
+      "How will we measure success for art galleries?",
+      "Let’s keep art galleries simple and practical."
+    ]
+  },
+  {
+    "topic": "Coffee Shop Etiquette",
+    "sentences": [
+      "Can we talk about coffee shop etiquette later today?",
+      "Do you have a minute to chat about coffee shop etiquette?",
+      "What’s your usual approach when it comes to coffee shop etiquette?",
+      "I’ve run into a small problem with coffee shop etiquette. Any ideas?",
+      "How do you normally handle coffee shop etiquette in your day to day?",
+      "Could you give me a quick tip about coffee shop etiquette?",
+      "I’m trying to get better at coffee shop etiquette; what would you suggest?",
+      "I’ve got a question about coffee shop etiquette—mind if I ask?",
+      "What’s the biggest mistake people make with coffee shop etiquette?",
+      "Do you prefer a simple or detailed plan for coffee shop etiquette?",
+      "I’m torn between two options for coffee shop etiquette. What do you think?",
+      "If you had to explain coffee shop etiquette to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with coffee shop etiquette?",
+      "What’s the timeline we’re looking at for coffee shop etiquette?",
+      "Could we set some expectations around coffee shop etiquette?",
+      "I’d appreciate your feedback on coffee shop etiquette.",
+      "Has anything changed recently regarding coffee shop etiquette?",
+      "What’s the backup plan if coffee shop etiquette doesn’t work out?",
+      "Do we need to loop anyone else in about coffee shop etiquette?",
+      "How will we measure success for coffee shop etiquette?",
+      "Let’s keep coffee shop etiquette simple and practical."
+    ]
+  },
+  {
+    "topic": "Restaurant Reservations",
+    "sentences": [
+      "Can we talk about restaurant reservations later today?",
+      "Do you have a minute to chat about restaurant reservations?",
+      "What’s your usual approach when it comes to restaurant reservations?",
+      "I’ve run into a small problem with restaurant reservations. Any ideas?",
+      "How do you normally handle restaurant reservations in your day to day?",
+      "Could you give me a quick tip about restaurant reservations?",
+      "I’m trying to get better at restaurant reservations; what would you suggest?",
+      "I’ve got a question about restaurant reservations—mind if I ask?",
+      "What’s the biggest mistake people make with restaurant reservations?",
+      "Do you prefer a simple or detailed plan for restaurant reservations?",
+      "I’m torn between two options for restaurant reservations. What do you think?",
+      "If you had to explain restaurant reservations to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with restaurant reservations?",
+      "What’s the timeline we’re looking at for restaurant reservations?",
+      "Could we set some expectations around restaurant reservations?",
+      "I’d appreciate your feedback on restaurant reservations.",
+      "Has anything changed recently regarding restaurant reservations?",
+      "What’s the backup plan if restaurant reservations doesn’t work out?",
+      "Do we need to loop anyone else in about restaurant reservations?",
+      "How will we measure success for restaurant reservations?",
+      "Let’s keep restaurant reservations simple and practical."
+    ]
+  },
+  {
+    "topic": "Bars & Drinks",
+    "sentences": [
+      "Can we talk about bars & drinks later today?",
+      "Do you have a minute to chat about bars & drinks?",
+      "What’s your usual approach when it comes to bars & drinks?",
+      "I’ve run into a small problem with bars & drinks. Any ideas?",
+      "How do you normally handle bars & drinks in your day to day?",
+      "Could you give me a quick tip about bars & drinks?",
+      "I’m trying to get better at bars & drinks; what would you suggest?",
+      "I’ve got a question about bars & drinks—mind if I ask?",
+      "What’s the biggest mistake people make with bars & drinks?",
+      "Do you prefer a simple or detailed plan for bars & drinks?",
+      "I’m torn between two options for bars & drinks. What do you think?",
+      "If you had to explain bars & drinks to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with bars & drinks?",
+      "What’s the timeline we’re looking at for bars & drinks?",
+      "Could we set some expectations around bars & drinks?",
+      "I’d appreciate your feedback on bars & drinks.",
+      "Has anything changed recently regarding bars & drinks?",
+      "What’s the backup plan if bars & drinks doesn’t work out?",
+      "Do we need to loop anyone else in about bars & drinks?",
+      "How will we measure success for bars & drinks?",
+      "Let’s keep bars & drinks simple and practical."
+    ]
+  },
+  {
+    "topic": "Tipping",
+    "sentences": [
+      "Can we talk about tipping later today?",
+      "Do you have a minute to chat about tipping?",
+      "What’s your usual approach when it comes to tipping?",
+      "I’ve run into a small problem with tipping. Any ideas?",
+      "How do you normally handle tipping in your day to day?",
+      "Could you give me a quick tip about tipping?",
+      "I’m trying to get better at tipping; what would you suggest?",
+      "I’ve got a question about tipping—mind if I ask?",
+      "What’s the biggest mistake people make with tipping?",
+      "Do you prefer a simple or detailed plan for tipping?",
+      "I’m torn between two options for tipping. What do you think?",
+      "If you had to explain tipping to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with tipping?",
+      "What’s the timeline we’re looking at for tipping?",
+      "Could we set some expectations around tipping?",
+      "I’d appreciate your feedback on tipping.",
+      "Has anything changed recently regarding tipping?",
+      "What’s the backup plan if tipping doesn’t work out?",
+      "Do we need to loop anyone else in about tipping?",
+      "How will we measure success for tipping?",
+      "Let’s keep tipping simple and practical."
+    ]
+  },
+  {
+    "topic": "Weddings",
+    "sentences": [
+      "Can we talk about weddings later today?",
+      "Do you have a minute to chat about weddings?",
+      "What’s your usual approach when it comes to weddings?",
+      "I’ve run into a small problem with weddings. Any ideas?",
+      "How do you normally handle weddings in your day to day?",
+      "Could you give me a quick tip about weddings?",
+      "I’m trying to get better at weddings; what would you suggest?",
+      "I’ve got a question about weddings—mind if I ask?",
+      "What’s the biggest mistake people make with weddings?",
+      "Do you prefer a simple or detailed plan for weddings?",
+      "I’m torn between two options for weddings. What do you think?",
+      "If you had to explain weddings to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with weddings?",
+      "What’s the timeline we’re looking at for weddings?",
+      "Could we set some expectations around weddings?",
+      "I’d appreciate your feedback on weddings.",
+      "Has anything changed recently regarding weddings?",
+      "What’s the backup plan if weddings doesn’t work out?",
+      "Do we need to loop anyone else in about weddings?",
+      "How will we measure success for weddings?",
+      "Let’s keep weddings simple and practical."
+    ]
+  },
+  {
+    "topic": "Funerals",
+    "sentences": [
+      "Can we talk about funerals later today?",
+      "Do you have a minute to chat about funerals?",
+      "What’s your usual approach when it comes to funerals?",
+      "I’ve run into a small problem with funerals. Any ideas?",
+      "How do you normally handle funerals in your day to day?",
+      "Could you give me a quick tip about funerals?",
+      "I’m trying to get better at funerals; what would you suggest?",
+      "I’ve got a question about funerals—mind if I ask?",
+      "What’s the biggest mistake people make with funerals?",
+      "Do you prefer a simple or detailed plan for funerals?",
+      "I’m torn between two options for funerals. What do you think?",
+      "If you had to explain funerals to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with funerals?",
+      "What’s the timeline we’re looking at for funerals?",
+      "Could we set some expectations around funerals?",
+      "I’d appreciate your feedback on funerals.",
+      "Has anything changed recently regarding funerals?",
+      "What’s the backup plan if funerals doesn’t work out?",
+      "Do we need to loop anyone else in about funerals?",
+      "How will we measure success for funerals?",
+      "Let’s keep funerals simple and practical."
+    ]
+  },
+  {
+    "topic": "Babysitting",
+    "sentences": [
+      "Can we talk about babysitting later today?",
+      "Do you have a minute to chat about babysitting?",
+      "What’s your usual approach when it comes to babysitting?",
+      "I’ve run into a small problem with babysitting. Any ideas?",
+      "How do you normally handle babysitting in your day to day?",
+      "Could you give me a quick tip about babysitting?",
+      "I’m trying to get better at babysitting; what would you suggest?",
+      "I’ve got a question about babysitting—mind if I ask?",
+      "What’s the biggest mistake people make with babysitting?",
+      "Do you prefer a simple or detailed plan for babysitting?",
+      "I’m torn between two options for babysitting. What do you think?",
+      "If you had to explain babysitting to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with babysitting?",
+      "What’s the timeline we’re looking at for babysitting?",
+      "Could we set some expectations around babysitting?",
+      "I’d appreciate your feedback on babysitting.",
+      "Has anything changed recently regarding babysitting?",
+      "What’s the backup plan if babysitting doesn’t work out?",
+      "Do we need to loop anyone else in about babysitting?",
+      "How will we measure success for babysitting?",
+      "Let’s keep babysitting simple and practical."
+    ]
+  },
+  {
+    "topic": "Elder Care",
+    "sentences": [
+      "Can we talk about elder care later today?",
+      "Do you have a minute to chat about elder care?",
+      "What’s your usual approach when it comes to elder care?",
+      "I’ve run into a small problem with elder care. Any ideas?",
+      "How do you normally handle elder care in your day to day?",
+      "Could you give me a quick tip about elder care?",
+      "I’m trying to get better at elder care; what would you suggest?",
+      "I’ve got a question about elder care—mind if I ask?",
+      "What’s the biggest mistake people make with elder care?",
+      "Do you prefer a simple or detailed plan for elder care?",
+      "I’m torn between two options for elder care. What do you think?",
+      "If you had to explain elder care to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with elder care?",
+      "What’s the timeline we’re looking at for elder care?",
+      "Could we set some expectations around elder care?",
+      "I’d appreciate your feedback on elder care.",
+      "Has anything changed recently regarding elder care?",
+      "What’s the backup plan if elder care doesn’t work out?",
+      "Do we need to loop anyone else in about elder care?",
+      "How will we measure success for elder care?",
+      "Let’s keep elder care simple and practical."
+    ]
+  },
+  {
+    "topic": "PTA & School Meetings",
+    "sentences": [
+      "Can we talk about pta & school meetings later today?",
+      "Do you have a minute to chat about pta & school meetings?",
+      "What’s your usual approach when it comes to pta & school meetings?",
+      "I’ve run into a small problem with pta & school meetings. Any ideas?",
+      "How do you normally handle pta & school meetings in your day to day?",
+      "Could you give me a quick tip about pta & school meetings?",
+      "I’m trying to get better at pta & school meetings; what would you suggest?",
+      "I’ve got a question about pta & school meetings—mind if I ask?",
+      "What’s the biggest mistake people make with pta & school meetings?",
+      "Do you prefer a simple or detailed plan for pta & school meetings?",
+      "I’m torn between two options for pta & school meetings. What do you think?",
+      "If you had to explain pta & school meetings to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with pta & school meetings?",
+      "What’s the timeline we’re looking at for pta & school meetings?",
+      "Could we set some expectations around pta & school meetings?",
+      "I’d appreciate your feedback on pta & school meetings.",
+      "Has anything changed recently regarding pta & school meetings?",
+      "What’s the backup plan if pta & school meetings doesn’t work out?",
+      "Do we need to loop anyone else in about pta & school meetings?",
+      "How will we measure success for pta & school meetings?",
+      "Let’s keep pta & school meetings simple and practical."
+    ]
+  },
+  {
+    "topic": "Field Trips",
+    "sentences": [
+      "Can we talk about field trips later today?",
+      "Do you have a minute to chat about field trips?",
+      "What’s your usual approach when it comes to field trips?",
+      "I’ve run into a small problem with field trips. Any ideas?",
+      "How do you normally handle field trips in your day to day?",
+      "Could you give me a quick tip about field trips?",
+      "I’m trying to get better at field trips; what would you suggest?",
+      "I’ve got a question about field trips—mind if I ask?",
+      "What’s the biggest mistake people make with field trips?",
+      "Do you prefer a simple or detailed plan for field trips?",
+      "I’m torn between two options for field trips. What do you think?",
+      "If you had to explain field trips to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with field trips?",
+      "What’s the timeline we’re looking at for field trips?",
+      "Could we set some expectations around field trips?",
+      "I’d appreciate your feedback on field trips.",
+      "Has anything changed recently regarding field trips?",
+      "What’s the backup plan if field trips doesn’t work out?",
+      "Do we need to loop anyone else in about field trips?",
+      "How will we measure success for field trips?",
+      "Let’s keep field trips simple and practical."
+    ]
+  },
+  {
+    "topic": "Classroom Volunteering",
+    "sentences": [
+      "Can we talk about classroom volunteering later today?",
+      "Do you have a minute to chat about classroom volunteering?",
+      "What’s your usual approach when it comes to classroom volunteering?",
+      "I’ve run into a small problem with classroom volunteering. Any ideas?",
+      "How do you normally handle classroom volunteering in your day to day?",
+      "Could you give me a quick tip about classroom volunteering?",
+      "I’m trying to get better at classroom volunteering; what would you suggest?",
+      "I’ve got a question about classroom volunteering—mind if I ask?",
+      "What’s the biggest mistake people make with classroom volunteering?",
+      "Do you prefer a simple or detailed plan for classroom volunteering?",
+      "I’m torn between two options for classroom volunteering. What do you think?",
+      "If you had to explain classroom volunteering to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with classroom volunteering?",
+      "What’s the timeline we’re looking at for classroom volunteering?",
+      "Could we set some expectations around classroom volunteering?",
+      "I’d appreciate your feedback on classroom volunteering.",
+      "Has anything changed recently regarding classroom volunteering?",
+      "What’s the backup plan if classroom volunteering doesn’t work out?",
+      "Do we need to loop anyone else in about classroom volunteering?",
+      "How will we measure success for classroom volunteering?",
+      "Let’s keep classroom volunteering simple and practical."
+    ]
+  },
+  {
+    "topic": "Parent-Teacher Conferences",
+    "sentences": [
+      "Can we talk about parent-teacher conferences later today?",
+      "Do you have a minute to chat about parent-teacher conferences?",
+      "What’s your usual approach when it comes to parent-teacher conferences?",
+      "I’ve run into a small problem with parent-teacher conferences. Any ideas?",
+      "How do you normally handle parent-teacher conferences in your day to day?",
+      "Could you give me a quick tip about parent-teacher conferences?",
+      "I’m trying to get better at parent-teacher conferences; what would you suggest?",
+      "I’ve got a question about parent-teacher conferences—mind if I ask?",
+      "What’s the biggest mistake people make with parent-teacher conferences?",
+      "Do you prefer a simple or detailed plan for parent-teacher conferences?",
+      "I’m torn between two options for parent-teacher conferences. What do you think?",
+      "If you had to explain parent-teacher conferences to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with parent-teacher conferences?",
+      "What’s the timeline we’re looking at for parent-teacher conferences?",
+      "Could we set some expectations around parent-teacher conferences?",
+      "I’d appreciate your feedback on parent-teacher conferences.",
+      "Has anything changed recently regarding parent-teacher conferences?",
+      "What’s the backup plan if parent-teacher conferences doesn’t work out?",
+      "Do we need to loop anyone else in about parent-teacher conferences?",
+      "How will we measure success for parent-teacher conferences?",
+      "Let’s keep parent-teacher conferences simple and practical."
+    ]
+  },
+  {
+    "topic": "Kids’ Sports",
+    "sentences": [
+      "Can we talk about kids’ sports later today?",
+      "Do you have a minute to chat about kids’ sports?",
+      "What’s your usual approach when it comes to kids’ sports?",
+      "I’ve run into a small problem with kids’ sports. Any ideas?",
+      "How do you normally handle kids’ sports in your day to day?",
+      "Could you give me a quick tip about kids’ sports?",
+      "I’m trying to get better at kids’ sports; what would you suggest?",
+      "I’ve got a question about kids’ sports—mind if I ask?",
+      "What’s the biggest mistake people make with kids’ sports?",
+      "Do you prefer a simple or detailed plan for kids’ sports?",
+      "I’m torn between two options for kids’ sports. What do you think?",
+      "If you had to explain kids’ sports to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with kids’ sports?",
+      "What’s the timeline we’re looking at for kids’ sports?",
+      "Could we set some expectations around kids’ sports?",
+      "I’d appreciate your feedback on kids’ sports.",
+      "Has anything changed recently regarding kids’ sports?",
+      "What’s the backup plan if kids’ sports doesn’t work out?",
+      "Do we need to loop anyone else in about kids’ sports?",
+      "How will we measure success for kids’ sports?",
+      "Let’s keep kids’ sports simple and practical."
+    ]
+  },
+  {
+    "topic": "Playdates",
+    "sentences": [
+      "Can we talk about playdates later today?",
+      "Do you have a minute to chat about playdates?",
+      "What’s your usual approach when it comes to playdates?",
+      "I’ve run into a small problem with playdates. Any ideas?",
+      "How do you normally handle playdates in your day to day?",
+      "Could you give me a quick tip about playdates?",
+      "I’m trying to get better at playdates; what would you suggest?",
+      "I’ve got a question about playdates—mind if I ask?",
+      "What’s the biggest mistake people make with playdates?",
+      "Do you prefer a simple or detailed plan for playdates?",
+      "I’m torn between two options for playdates. What do you think?",
+      "If you had to explain playdates to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with playdates?",
+      "What’s the timeline we’re looking at for playdates?",
+      "Could we set some expectations around playdates?",
+      "I’d appreciate your feedback on playdates.",
+      "Has anything changed recently regarding playdates?",
+      "What’s the backup plan if playdates doesn’t work out?",
+      "Do we need to loop anyone else in about playdates?",
+      "How will we measure success for playdates?",
+      "Let’s keep playdates simple and practical."
+    ]
+  },
+  {
+    "topic": "Travel Visas",
+    "sentences": [
+      "Can we talk about travel visas later today?",
+      "Do you have a minute to chat about travel visas?",
+      "What’s your usual approach when it comes to travel visas?",
+      "I’ve run into a small problem with travel visas. Any ideas?",
+      "How do you normally handle travel visas in your day to day?",
+      "Could you give me a quick tip about travel visas?",
+      "I’m trying to get better at travel visas; what would you suggest?",
+      "I’ve got a question about travel visas—mind if I ask?",
+      "What’s the biggest mistake people make with travel visas?",
+      "Do you prefer a simple or detailed plan for travel visas?",
+      "I’m torn between two options for travel visas. What do you think?",
+      "If you had to explain travel visas to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with travel visas?",
+      "What’s the timeline we’re looking at for travel visas?",
+      "Could we set some expectations around travel visas?",
+      "I’d appreciate your feedback on travel visas.",
+      "Has anything changed recently regarding travel visas?",
+      "What’s the backup plan if travel visas doesn’t work out?",
+      "Do we need to loop anyone else in about travel visas?",
+      "How will we measure success for travel visas?",
+      "Let’s keep travel visas simple and practical."
+    ]
+  },
+  {
+    "topic": "Immigration Office",
+    "sentences": [
+      "Can we talk about immigration office later today?",
+      "Do you have a minute to chat about immigration office?",
+      "What’s your usual approach when it comes to immigration office?",
+      "I’ve run into a small problem with immigration office. Any ideas?",
+      "How do you normally handle immigration office in your day to day?",
+      "Could you give me a quick tip about immigration office?",
+      "I’m trying to get better at immigration office; what would you suggest?",
+      "I’ve got a question about immigration office—mind if I ask?",
+      "What’s the biggest mistake people make with immigration office?",
+      "Do you prefer a simple or detailed plan for immigration office?",
+      "I’m torn between two options for immigration office. What do you think?",
+      "If you had to explain immigration office to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with immigration office?",
+      "What’s the timeline we’re looking at for immigration office?",
+      "Could we set some expectations around immigration office?",
+      "I’d appreciate your feedback on immigration office.",
+      "Has anything changed recently regarding immigration office?",
+      "What’s the backup plan if immigration office doesn’t work out?",
+      "Do we need to loop anyone else in about immigration office?",
+      "How will we measure success for immigration office?",
+      "Let’s keep immigration office simple and practical."
+    ]
+  },
+  {
+    "topic": "Post Office",
+    "sentences": [
+      "Can we talk about post office later today?",
+      "Do you have a minute to chat about post office?",
+      "What’s your usual approach when it comes to post office?",
+      "I’ve run into a small problem with post office. Any ideas?",
+      "How do you normally handle post office in your day to day?",
+      "Could you give me a quick tip about post office?",
+      "I’m trying to get better at post office; what would you suggest?",
+      "I’ve got a question about post office—mind if I ask?",
+      "What’s the biggest mistake people make with post office?",
+      "Do you prefer a simple or detailed plan for post office?",
+      "I’m torn between two options for post office. What do you think?",
+      "If you had to explain post office to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with post office?",
+      "What’s the timeline we’re looking at for post office?",
+      "Could we set some expectations around post office?",
+      "I’d appreciate your feedback on post office.",
+      "Has anything changed recently regarding post office?",
+      "What’s the backup plan if post office doesn’t work out?",
+      "Do we need to loop anyone else in about post office?",
+      "How will we measure success for post office?",
+      "Let’s keep post office simple and practical."
+    ]
+  },
+  {
+    "topic": "Packages & Deliveries",
+    "sentences": [
+      "Can we talk about packages & deliveries later today?",
+      "Do you have a minute to chat about packages & deliveries?",
+      "What’s your usual approach when it comes to packages & deliveries?",
+      "I’ve run into a small problem with packages & deliveries. Any ideas?",
+      "How do you normally handle packages & deliveries in your day to day?",
+      "Could you give me a quick tip about packages & deliveries?",
+      "I’m trying to get better at packages & deliveries; what would you suggest?",
+      "I’ve got a question about packages & deliveries—mind if I ask?",
+      "What’s the biggest mistake people make with packages & deliveries?",
+      "Do you prefer a simple or detailed plan for packages & deliveries?",
+      "I’m torn between two options for packages & deliveries. What do you think?",
+      "If you had to explain packages & deliveries to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with packages & deliveries?",
+      "What’s the timeline we’re looking at for packages & deliveries?",
+      "Could we set some expectations around packages & deliveries?",
+      "I’d appreciate your feedback on packages & deliveries.",
+      "Has anything changed recently regarding packages & deliveries?",
+      "What’s the backup plan if packages & deliveries doesn’t work out?",
+      "Do we need to loop anyone else in about packages & deliveries?",
+      "How will we measure success for packages & deliveries?",
+      "Let’s keep packages & deliveries simple and practical."
+    ]
+  },
+  {
+    "topic": "Lost & Found",
+    "sentences": [
+      "Can we talk about lost & found later today?",
+      "Do you have a minute to chat about lost & found?",
+      "What’s your usual approach when it comes to lost & found?",
+      "I’ve run into a small problem with lost & found. Any ideas?",
+      "How do you normally handle lost & found in your day to day?",
+      "Could you give me a quick tip about lost & found?",
+      "I’m trying to get better at lost & found; what would you suggest?",
+      "I’ve got a question about lost & found—mind if I ask?",
+      "What’s the biggest mistake people make with lost & found?",
+      "Do you prefer a simple or detailed plan for lost & found?",
+      "I’m torn between two options for lost & found. What do you think?",
+      "If you had to explain lost & found to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with lost & found?",
+      "What’s the timeline we’re looking at for lost & found?",
+      "Could we set some expectations around lost & found?",
+      "I’d appreciate your feedback on lost & found.",
+      "Has anything changed recently regarding lost & found?",
+      "What’s the backup plan if lost & found doesn’t work out?",
+      "Do we need to loop anyone else in about lost & found?",
+      "How will we measure success for lost & found?",
+      "Let’s keep lost & found simple and practical."
+    ]
+  },
+  {
+    "topic": "Tech Gadgets",
+    "sentences": [
+      "Can we talk about tech gadgets later today?",
+      "Do you have a minute to chat about tech gadgets?",
+      "What’s your usual approach when it comes to tech gadgets?",
+      "I’ve run into a small problem with tech gadgets. Any ideas?",
+      "How do you normally handle tech gadgets in your day to day?",
+      "Could you give me a quick tip about tech gadgets?",
+      "I’m trying to get better at tech gadgets; what would you suggest?",
+      "I’ve got a question about tech gadgets—mind if I ask?",
+      "What’s the biggest mistake people make with tech gadgets?",
+      "Do you prefer a simple or detailed plan for tech gadgets?",
+      "I’m torn between two options for tech gadgets. What do you think?",
+      "If you had to explain tech gadgets to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with tech gadgets?",
+      "What’s the timeline we’re looking at for tech gadgets?",
+      "Could we set some expectations around tech gadgets?",
+      "I’d appreciate your feedback on tech gadgets.",
+      "Has anything changed recently regarding tech gadgets?",
+      "What’s the backup plan if tech gadgets doesn’t work out?",
+      "Do we need to loop anyone else in about tech gadgets?",
+      "How will we measure success for tech gadgets?",
+      "Let’s keep tech gadgets simple and practical."
+    ]
+  },
+  {
+    "topic": "Social Media",
+    "sentences": [
+      "Can we talk about social media later today?",
+      "Do you have a minute to chat about social media?",
+      "What’s your usual approach when it comes to social media?",
+      "I’ve run into a small problem with social media. Any ideas?",
+      "How do you normally handle social media in your day to day?",
+      "Could you give me a quick tip about social media?",
+      "I’m trying to get better at social media; what would you suggest?",
+      "I’ve got a question about social media—mind if I ask?",
+      "What’s the biggest mistake people make with social media?",
+      "Do you prefer a simple or detailed plan for social media?",
+      "I’m torn between two options for social media. What do you think?",
+      "If you had to explain social media to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with social media?",
+      "What’s the timeline we’re looking at for social media?",
+      "Could we set some expectations around social media?",
+      "I’d appreciate your feedback on social media.",
+      "Has anything changed recently regarding social media?",
+      "What’s the backup plan if social media doesn’t work out?",
+      "Do we need to loop anyone else in about social media?",
+      "How will we measure success for social media?",
+      "Let’s keep social media simple and practical."
+    ]
+  },
+  {
+    "topic": "Privacy & Security",
+    "sentences": [
+      "Can we talk about privacy & security later today?",
+      "Do you have a minute to chat about privacy & security?",
+      "What’s your usual approach when it comes to privacy & security?",
+      "I’ve run into a small problem with privacy & security. Any ideas?",
+      "How do you normally handle privacy & security in your day to day?",
+      "Could you give me a quick tip about privacy & security?",
+      "I’m trying to get better at privacy & security; what would you suggest?",
+      "I’ve got a question about privacy & security—mind if I ask?",
+      "What’s the biggest mistake people make with privacy & security?",
+      "Do you prefer a simple or detailed plan for privacy & security?",
+      "I’m torn between two options for privacy & security. What do you think?",
+      "If you had to explain privacy & security to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with privacy & security?",
+      "What’s the timeline we’re looking at for privacy & security?",
+      "Could we set some expectations around privacy & security?",
+      "I’d appreciate your feedback on privacy & security.",
+      "Has anything changed recently regarding privacy & security?",
+      "What’s the backup plan if privacy & security doesn’t work out?",
+      "Do we need to loop anyone else in about privacy & security?",
+      "How will we measure success for privacy & security?",
+      "Let’s keep privacy & security simple and practical."
+    ]
+  },
+  {
+    "topic": "Passwords",
+    "sentences": [
+      "Can we talk about passwords later today?",
+      "Do you have a minute to chat about passwords?",
+      "What’s your usual approach when it comes to passwords?",
+      "I’ve run into a small problem with passwords. Any ideas?",
+      "How do you normally handle passwords in your day to day?",
+      "Could you give me a quick tip about passwords?",
+      "I’m trying to get better at passwords; what would you suggest?",
+      "I’ve got a question about passwords—mind if I ask?",
+      "What’s the biggest mistake people make with passwords?",
+      "Do you prefer a simple or detailed plan for passwords?",
+      "I’m torn between two options for passwords. What do you think?",
+      "If you had to explain passwords to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with passwords?",
+      "What’s the timeline we’re looking at for passwords?",
+      "Could we set some expectations around passwords?",
+      "I’d appreciate your feedback on passwords.",
+      "Has anything changed recently regarding passwords?",
+      "What’s the backup plan if passwords doesn’t work out?",
+      "Do we need to loop anyone else in about passwords?",
+      "How will we measure success for passwords?",
+      "Let’s keep passwords simple and practical."
+    ]
+  },
+  {
+    "topic": "Troubleshooting Apps",
+    "sentences": [
+      "Can we talk about troubleshooting apps later today?",
+      "Do you have a minute to chat about troubleshooting apps?",
+      "What’s your usual approach when it comes to troubleshooting apps?",
+      "I’ve run into a small problem with troubleshooting apps. Any ideas?",
+      "How do you normally handle troubleshooting apps in your day to day?",
+      "Could you give me a quick tip about troubleshooting apps?",
+      "I’m trying to get better at troubleshooting apps; what would you suggest?",
+      "I’ve got a question about troubleshooting apps—mind if I ask?",
+      "What’s the biggest mistake people make with troubleshooting apps?",
+      "Do you prefer a simple or detailed plan for troubleshooting apps?",
+      "I’m torn between two options for troubleshooting apps. What do you think?",
+      "If you had to explain troubleshooting apps to a friend, how would you put it?",
+      "Is there a budget-friendly way to deal with troubleshooting apps?",
+      "What’s the timeline we’re looking at for troubleshooting apps?",
+      "Could we set some expectations around troubleshooting apps?",
+      "I’d appreciate your feedback on troubleshooting apps.",
+      "Has anything changed recently regarding troubleshooting apps?",
+      "What’s the backup plan if troubleshooting apps doesn’t work out?",
+      "Do we need to loop anyone else in about troubleshooting apps?",
+      "How will we measure success for troubleshooting apps?",
+      "Let’s keep troubleshooting apps simple and practical."
+    ]
+  }
+];
+</script>
+</body>
+</html>
