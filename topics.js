@@ -1,9 +1,6 @@
-Array.isArray(TOPICS) && TOPICS.length   // → (예: 10, 20, 100 ...)
-Array.isArray(TITLES) && TITLES.length   // → TOPICS 개수와 동일해야 정상
-typeof bank21                            // → "function"
-TOPIC_BANKS[TITLES[0]].length            // → 21 이어야 정상
-// Fully handcrafted topics.js — 100 topics × 21 sentences each
-// topics.js (1~10번 주제 · 각 21문장 · 다양한 문형 포함)
+// topics.js (1~10번 예시, 이후 확장 가능)
+
+// 1~10번까지 주제와 21문장씩
 const TOPICS = [
   {
     "topic": "Coffee & Café",
@@ -267,4 +264,6 @@ const TOPICS = [
   }
 ];
 
-export { TOPICS };
+// ✅ 브라우저 전역에 TOPICS를 노출 (기존 index 코드 호환)
+window.TOPICS = TOPICS;
+
