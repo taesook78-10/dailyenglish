@@ -1,162 +1,827 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <script src="topics.js"></script>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>영어 학습 앱</title>
+  <title>Daily 3 Lines — TTS · STT · Score · 100-Day</title>
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="manifest" href="/dailyenglish/manifest.webmanifest?v=10">
+  <link rel="apple-touch-icon" href="/dailyenglish/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/dailyenglish/icon-192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/dailyenglish/icon-192.png">
   <style>
-    body {
-      font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f8fafc;
-      color: #0f172a;
-    }
-    header {
-      background: #4f46e5;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      font-size: 1.2rem;
-    }
-    main {
-      padding: 1rem;
-      max-width: 700px;
-      margin: auto;
-    }
-    .card {
-      background: white;
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(2,6,23,.06);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    .chip-row {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .chip {
-      display: inline-block;
-      padding: 0.3rem 0.7rem;
-      border-radius: 9999px;
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-    .success {
-      background: #16a34a;
-      color: white;
-    }
-    .score {
-      background: #4f46e5;
-      color: white;
-    }
-    .sentence {
-      margin: 0.6rem 0;
-      padding: 0.8rem;
-      background: #f1f5f9;
-      border-radius: 10px;
-    }
-    button {
-      margin-top: 1rem;
-      background: #4f46e5;
-      color: white;
-      border: none;
-      padding: 0.7rem 1.2rem;
-      border-radius: 10px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #4338ca;
-    }
+  :root{
+    --bg:#0b1020; --card:#111a34; --ink:#e8eefc; --muted:#9fb0df;
+    --pri:#5b8cff; --good:#21d39b; --warn:#ffb454; --bad:#ff5c7a;
+    --ring:#31457a; --ring-strong:#4a63a8;
+    --shadow:0 12px 40px rgba(0,0,0,.35);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--ink);
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, sans-serif;
+    background:
+      radial-gradient(80% 60% at 10% 0%,#15224b 0%,#0b1020 60%),
+      radial-gradient(80% 60% at 100% 100%,#0f1834 0%,#0b1020 60%);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:20px}
+  header{display:flex;align-items:center;gap:14px;margin:6px 0 14px;flex-wrap:wrap}
+  h1{font-size:22px;margin:0;font-weight:800;letter-spacing:.2px}
+  .badge{padding:6px 10px;border-radius:999px;background:rgba(91,140,255,.15);color:#cfe0ff;border:1px solid var(--ring);font-size:12px}
+  nav{display:flex; gap:8px; margin:10px 0 16px; flex-wrap:wrap; align-items:center}
+  .tab{padding:10px 14px;border-radius:12px;background:#101733;border:1px solid var(--ring);cursor:pointer;color:#a7b3d6}
+  .tab.active{background:#141f45;color:var(--ink);border-color:#3a5296}
+  select{appearance:none;background:#101733;border:1px solid var(--ring);color:#e8eefc;padding:10px 12px;border-radius:10px;min-height:44px}
+  .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+  @media (max-width:960px){.grid{grid-template-columns:1fr;}}
+  .card{background:linear-gradient(180deg,#111a34,#0f1731);border:1px solid var(--ring);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card .hd{display:flex;align-items:flex-start;justify-content:space-between;padding:18px 18px 0}
+  .card .body{padding:14px 18px 20px}
+  .title{font-size:26px;margin-top:4px;font-weight:900;letter-spacing:.3px}
+  .subtitle{font-size:13px;color:var(--muted)}
+  .line{border:1px solid var(--ring);border-radius:16px;padding:14px;margin:12px 0;background:#0f1731}
+  .line p{margin:0 0 8px;font-size:18px;line-height:1.5}
+  .line p.ko{margin:0 0 10px; font-size:15.5px; line-height:1.6; color:#cbd4f5}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  .btn{
+    appearance:none;border:none;border-radius:12px;padding:10px 14px;
+    background:#17224a;color:#e8eefc;border:1px solid #2b3f7a;cursor:pointer;min-height:44px;
+    transition:transform .06s ease, filter .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{filter:brightness(1.05)}
+  .btn:active{transform:translateY(1px)}
+  .btn[disabled]{opacity:.6;cursor:not-allowed}
+  .btn.pri{background:linear-gradient(180deg,#3d64ff,#2b4bd4);border-color:#3b57e0}
+  .btn.warn{background:#3a2a0e;border-color:#9f6b18}
+  .btn.ghost{background:transparent;border-color:#2b3f7a}
+  .btn.rec{background:linear-gradient(180deg,#ff5c7a,#e44360); border-color:#ff7f97; color:white; box-shadow:0 0 0 2px rgba(255,92,122,.25) inset}
+
+  .chip{display:inline-flex; align-items:center; gap:8px; padding:8px 12px;border:1px solid var(--ring);border-radius:12px;background:#101733;font-size:13px}
+  .chip::before{content:''; width:8px; height:8px; border-radius:50%; background:linear-gradient(180deg,#a7baff,#5b8cff); box-shadow:0 0 0 2px rgba(91,140,255,.15);}
+  .score{font-weight:900}
+
+  .meter{height:12px;background:#0e1330;border-radius:999px;border:1px solid var(--ring);overflow:hidden}
+  .meter>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff5c7a,#ffb454,#5b8cff,#21d39b)}
+
+  .kpi{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  .calendar{display:grid;grid-template-columns:repeat(10,1fr);gap:8px}
+  .day{aspect-ratio:1/1;border:1px solid #2d3d72;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0e1430;color:#c9d4ff;font-weight:700; font-size:14px}
+  @media (max-width:520px){ .calendar{grid-template-columns:repeat(7,1fr)} .day{font-size:13px} .line p{font-size:16px} .title{font-size:22px}}
+
+  .toast{position:fixed;inset:auto 0 18px 0;display:flex;justify-content:center;pointer-events:none}
+  .toast span{pointer-events:auto;background:#101733;border:1px solid var(--ring);padding:10px 14px;border-radius:12px}
+
+  .small{font-size:12px;color:#a7b3d6}
+  .hint{font-size:12.5px;color:#d3dcff;background:#16214a;border:1px solid #2e4489;padding:10px 12px;border-radius:10px}
+
+  /* 연속 말하기 패널 */
+  .practice{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:9999;}
+  .practice .box{width:min(720px,94vw); max-height:92vh; overflow:auto; background:#101733; border:1px solid var(--ring); border-radius:16px; padding:16px; box-shadow:var(--shadow);}
+  .practice .box h3{margin:0 0 12px; font-size:18px;}
+  .practice .ref{font-size:14.5px; color:#cfe0ff; margin:6px 0 12px; white-space:pre-wrap; line-height:1.6}
+  .practice .meta{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px}
+  .practice .result{margin-top:12px; padding:12px; border:1px solid var(--ring); border-radius:12px; background:#0f1731}
+  .feedback{display:block; font-size:12.5px; color:#cfe0ff; opacity:.95}
   </style>
-  <!-- 21문장 세트 topics.js 먼저 불러오기 -->
-  <script src="topics.js"></script>
 </head>
 <body>
-  <header>오늘의 영어 학습</header>
-  <main>
-    <div class="card">
-      <div class="chip-row">
-        <div id="successChip" class="chip success" style="display:none;">성공 🎉</div>
-        <div id="scoreChip" class="chip score">점수: 0</div>
+  <div class="wrap">
+    <header>
+      <h1>Daily 3 Lines <span class="badge">100일 챌린지</span></h1>
+      <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn ghost" id="btnRetry">⟲ 다시 하기</button>
+        <button class="btn warn" id="btnReset">⟲ 전체 초기화</button>
       </div>
-      <h2 id="topicTitle">주제</h2>
-      <div id="sentences"></div>
-      <button id="retryBtn">다시하기</button>
+    </header>
+
+    <nav>
+      <button class="tab active" data-view="home">오늘의 학습</button>
+      <button class="tab" data-view="challenge">챌린지</button>
+      <button class="tab" data-view="progress">기록</button>
+
+      <div style="display:flex; gap:8px; align-items:center; margin-left:auto; flex-wrap:wrap">
+        <label class="small" for="voiceSelect">Voice</label>
+        <select id="voiceSelect" title="TTS Voice"></select>
+
+        <span class="small">속도</span>
+        <button class="btn" id="rateDown">–</button>
+        <span id="rate" class="small">1.0x</span>
+        <button class="btn" id="rateUp">+</button>
+      </div>
+    </nav>
+
+    <section id="home" class="grid">
+      <div class="card">
+        <div class="hd">
+          <div>
+            <div class="subtitle">오늘의 제목 (Day <span id="dayNum">1</span>)</div>
+            <div class="title" id="dayTitle">—</div>
+          </div>
+        </div>
+        <div class="body" id="lines"></div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <h2>오늘의 목표</h2>
+          <div class="kpi">
+            <div class="chip">80점 이상 성공</div>
+            <div class="chip">점수: <span class="score" id="avgScore">—</span></div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="meter" title="3문장 연속 말하기 점수"><i id="meterBar"></i></div>
+          <div style="height:12px"></div>
+          <button class="btn pri" id="markDone" disabled>✔ 오늘 완료로 표시</button>
+          <div style="height:12px"></div>
+          <div class="hint">세 문장을 모두 듣고(▶︎) <b>3문장 연속 말하기(점수 반영)</b>에서 80점 이상이면 완료할 수 있어요.</div>
+          <div style="height:12px"></div>
+          <div class="kpi">
+            <div class="chip">연속일수: <b id="streak">0</b>일</div>
+            <div class="chip">마지막 완료: <span id="lastDone">—</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="challenge" style="display:none">
+      <div class="card">
+        <div class="hd"><h2>100일 챌린지</h2><div class="chip">Day 1 → Day 100</div></div>
+        <div class="body">
+          <div class="calendar" id="challenge100"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="progress" style="display:none">
+      <div class="card">
+        <div class="hd"><h2>점수 기록</h2></div>
+        <div class="body"><div id="history"></div></div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" style="display:none"><span id="toastMsg"></span></div>
+  </div>
+
+<script>
+/* ====== Storage / Date Utilities ====== */
+const LS_USER='d3l_user', LS_PROGRESS='d3l_progress';
+function todayKey(){ const f = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit'}); return f.format(new Date()); }
+function loadUser(){ return JSON.parse(localStorage.getItem(LS_USER)||'{"ttsRate":1,"lang":"en-US","voiceURI":""}'); }
+function saveUser(u){ localStorage.setItem(LS_USER, JSON.stringify(u)); }
+function loadProg(){ return JSON.parse(localStorage.getItem(LS_PROGRESS)||'{}'); }
+function saveProg(p){ localStorage.setItem(LS_PROGRESS, JSON.stringify(p)); }
+
+let user=loadUser(), prog=loadProg();
+if(!prog._startedAt){ prog._startedAt=todayKey(); }
+if(!prog._currentDay){ prog._currentDay=1; }
+if(!prog._lastDate){ prog._lastDate=todayKey(); } // KST 기준 마지막 본 날짜
+if(!Array.isArray(prog._history)) { prog._history = []; }
+saveProg(prog);
+
+function computeDayFromStart(){
+  const start = new Date(prog._startedAt+'T00:00:00+09:00');
+  return Math.max(1, Math.min(100, Math.floor((Date.now()-start)/86400000)+1));
+}
+function getTodayDay(){
+  const cur=prog._currentDay || computeDayFromStart();
+  const d=Math.max(1,Math.min(100,cur));
+  if(prog._currentDay!==d){ prog._currentDay=d; saveProg(prog); }
+  return d;
+}
+
+/* ====== Data (100 Titles) ====== */
+const TITLES=[ 'Morning Routine','Commuting','Coffee Break','Emails','Team Meeting','Project Update','Lunch Out','Groceries','Gym','Evening Walk',
+  'Streaming Show','Weekend Plan','Laundry','Room Cleaning','Errands','Bank Visit','Pharmacy','Salon','Car Wash','Pet Care',
+  'Cooking Dinner','Takeout','Birthday Party','Small Talk','Weather Chat','Sports Talk','News Catch-up','Book Club','Movie Night','Concert',
+  'Coffee Chat','Study Session','Library Visit','Note Taking','Presentation Prep','Public Speaking','Mentor Advice','Goal Setting','Habit Tracking','Budgeting',
+  'Online Shopping','Return/Refund','Customer Service','Travel Plan','Packing','Airport','Hotel Check-in','City Tour','Photo Walk','Museum',
+  'Park Picnic','Beach Day','Hiking','Rainy Day','Snow Day','Heat Wave','Cold Snap','Sick Day','Clinic Visit','Dentist Visit',
+  'Back to Work','Overtime','Deadline Push','Celebration','Thank-you Notes','Apology','Making Plans','Canceling Plans','Running Late','Time Management',
+  'Morning Coffee','Afternoon Slump','Power Nap','Evening Class','Night Drive','Late Snack','Phone Call','Video Call','Texting','Social Media',
+  'Digital Detox','Mindfulness','Journaling','Reading','Music Playlist','Podcast','Language Practice','Networking','Interview Prep','Part-time Job',
+  'Side Project','Coding Session','Design Draft','Feedback Round','Revision','Final Review','Presentation Day','Rest Day','Family Dinner','Friends Hangout',
+  'Date Night','Neighborhood Walk','Farmer’s Market','Car Maintenance','House Plants','Recycling','Donation','Volunteering','Community Event','Holiday Prep'
+];
+
+/* ====== TOPIC BANKS ======
+   - 각 주제는 (1) 완전 커스텀 21문장 배열 또는
+                 (2) category 키워드(예: 'coffee','airport',...) 로 지정 가능
+   - 아래 기본 세팅은 100개 전체 주제를 카테고리로 분류해 둠.
+   - 특정 주제를 완전 커스텀하고 싶으면 해당 키에 21문장 배열을 직접 넣으면 됩니다.
+*/
+const TOPIC_BANKS = {
+  // 일상/이동
+  'Morning Routine': 'routine',
+  'Commuting': 'commute',
+  // 커피 관련
+  'Coffee Break': 'coffee',
+  'Morning Coffee': 'coffee',
+  'Coffee Chat': 'coffee',
+  // 업무/회의/문서
+  'Emails': 'emails',
+  'Team Meeting': 'meeting',
+  'Project Update': 'work',
+  'Note Taking': 'study',
+  'Presentation Prep': 'presentation',
+  'Public Speaking': 'public_speaking',
+  'Mentor Advice': 'mentoring',
+  'Goal Setting': 'planning',
+  'Habit Tracking': 'habit',
+  'Budgeting': 'budget',
+  // 식사/쇼핑/헬스
+  'Lunch Out': 'dining',
+  'Groceries': 'groceries',
+  'Gym': 'gym',
+  // 저녁/여가
+  'Evening Walk': 'walk',
+  'Streaming Show': 'streaming',
+  'Weekend Plan': 'weekend',
+  'Laundry': 'homecare',
+  'Room Cleaning': 'homecare',
+  'Errands': 'errands',
+  'Bank Visit': 'bank',
+  'Pharmacy': 'pharmacy',
+  'Salon': 'salon',
+  'Car Wash': 'car_wash',
+  'Pet Care': 'pet',
+  'Cooking Dinner': 'cooking',
+  'Takeout': 'takeout',
+  'Birthday Party': 'party',
+  'Small Talk': 'smalltalk',
+  'Weather Chat': 'weather_chat',
+  'Sports Talk': 'sports',
+  'News Catch-up': 'news',
+  'Book Club': 'book',
+  'Movie Night': 'movie',
+  'Concert': 'concert',
+  // 학습/도서관
+  'Study Session': 'study',
+  'Library Visit': 'library',
+  // 온라인/쇼핑/고객
+  'Online Shopping': 'shopping',
+  'Return/Refund': 'refund',
+  'Customer Service': 'customer_service',
+  // 여행
+  'Travel Plan': 'travel',
+  'Packing': 'packing',
+  'Airport': 'airport',
+  'Hotel Check-in': 'hotel',
+  'City Tour': 'tour',
+  'Photo Walk': 'photo',
+  'Museum': 'museum',
+  'Park Picnic': 'picnic',
+  'Beach Day': 'beach',
+  'Hiking': 'hiking',
+  // 날씨
+  'Rainy Day': 'rain',
+  'Snow Day': 'snow',
+  'Heat Wave': 'heat',
+  'Cold Snap': 'cold',
+  // 건강
+  'Sick Day': 'sick',
+  'Clinic Visit': 'clinic',
+  'Dentist Visit': 'dentist',
+  // 업무 페이스
+  'Back to Work': 'work',
+  'Overtime': 'overtime',
+  'Deadline Push': 'deadline',
+  'Celebration': 'celebration',
+  'Thank-you Notes': 'thanks',
+  'Apology': 'apology',
+  // 약속/시간
+  'Making Plans': 'plans',
+  'Canceling Plans': 'cancel',
+  'Running Late': 'late',
+  'Time Management': 'timemanage',
+  // 하루 리듬
+  'Afternoon Slump': 'slump',
+  'Power Nap': 'nap',
+  'Evening Class': 'class',
+  'Night Drive': 'drive',
+  'Late Snack': 'snack',
+  // 소통
+  'Phone Call': 'phone',
+  'Video Call': 'video',
+  'Texting': 'text',
+  'Social Media': 'social',
+  // 마음/기록/콘텐츠
+  'Digital Detox': 'detox',
+  'Mindfulness': 'mindfulness',
+  'Journaling': 'journal',
+  'Reading': 'reading',
+  'Music Playlist': 'music',
+  'Podcast': 'podcast',
+  'Language Practice': 'language',
+  // 커리어
+  'Networking': 'network',
+  'Interview Prep': 'interview',
+  'Part-time Job': 'parttime',
+  // 사이드/제작
+  'Side Project': 'side',
+  'Coding Session': 'coding',
+  'Design Draft': 'design',
+  'Feedback Round': 'feedback',
+  'Revision': 'revision',
+  'Final Review': 'final_review',
+  'Presentation Day': 'presentation_day',
+  // 휴식/가족/친구/데이트
+  'Rest Day': 'rest',
+  'Family Dinner': 'family',
+  'Friends Hangout': 'friends',
+  'Date Night': 'date',
+  'Neighborhood Walk': 'walk',
+  'Farmer’s Market': 'market',
+  // 집/환경/공동체
+  'Car Maintenance': 'car_maint',
+  'House Plants': 'plants',
+  'Recycling': 'recycling',
+  'Donation': 'donation',
+  'Volunteering': 'volunteer',
+  'Community Event': 'community',
+  'Holiday Prep': 'holiday'
+};
+
+/* ====== 카테고리별 문장 템플릿 ======
+   - 각 카테고리에서 21문장을 정확히 반환 (en/ko 페어)
+   - 커피/공항 등은 전용 콘텐츠, 기타는 범용 "주제 맞춤 템플릿"
+*/
+function lines_coffee(){
+  return [
+    {en:"I drink a cup of coffee every morning.", ko:"나는 매일 아침 커피를 한 잔 마셔요."},
+    {en:"I tried a new coffee shop today.", ko:"오늘 새로운 커피숍에 가봤어요."},
+    {en:"I like iced coffee in the summer.", ko:"여름에는 아이스커피를 좋아해요."},
+    {en:"Too much coffee makes me nervous.", ko:"커피를 너무 많이 마시면 신경이 예민해져요."},
+    {en:"I ordered a latte with no sugar.", ko:"설탕 없이 라테를 주문했어요."},
+    {en:"The aroma of fresh coffee woke me up.", ko:"갓 내린 커피 향이 잠을 깨워줬어요."},
+    {en:"I ground the beans right before brewing.", ko:"추출하기 직전에 원두를 갈았어요."},
+    {en:"I’m learning to make better pour-over.", ko:"더 맛있는 푸어오버를 배우고 있어요."},
+    {en:"I added a splash of milk to my coffee.", ko:"커피에 우유를 약간 넣었어요."},
+    {en:"We chatted over coffee after lunch.", ko:"점심 후 커피 마시며 수다를 떨었어요."},
+    {en:"I switched to decaf in the evening.", ko:"저녁에는 디카페인으로 바꿨어요."},
+    {en:"The barista recommended a seasonal blend.", ko:"바리스타가 시즌 블렌드를 추천했어요."},
+    {en:"I tried a single-origin espresso shot.", ko:"싱글 오리진 에스프레소 샷을 마셔봤어요."},
+    {en:"I compared light and dark roasts.", ko:"라이트 로스트와 다크 로스트를 비교해 봤어요."},
+    {en:"I cleaned my coffee grinder today.", ko:"오늘 커피 그라인더를 청소했어요."},
+    {en:"I set a budget for my coffee spending.", ko:"커피 지출 예산을 정했어요."},
+    {en:"I skipped coffee to sleep better tonight.", ko:"오늘 밤 숙면을 위해 커피를 건너뛰었어요."},
+    {en:"I paired coffee with a small dessert.", ko:"커피와 작은 디저트를 곁들였어요."},
+    {en:"The café was cozy and quiet.", ko:"카페가 아늑하고 조용했어요."},
+    {en:"I learned a new brewing ratio.", ko:"새로운 추출 비율을 배웠어요."},
+    {en:"I’m glad my coffee turned out smooth.", ko:"커피가 부드럽게 잘 나와서 만족했어요."},
+  ];
+}
+function lines_airport(){
+  return [
+    {en:"I checked in online before going to the airport.", ko:"공항에 가기 전에 온라인 체크인을 했어요."},
+    {en:"I arrived early to avoid long lines.", ko:"긴 줄을 피하려고 일찍 도착했어요."},
+    {en:"Security screening was quick today.", ko:"오늘 보안 검색이 빨랐어요."},
+    {en:"I printed my boarding pass just in case.", ko:"혹시 몰라 탑승권을 출력했어요."},
+    {en:"I double-checked my gate and seat number.", ko:"게이트와 좌석 번호를 다시 확인했어요."},
+    {en:"I put my liquids in a clear bag.", ko:"액체류를 투명한 봉투에 넣었어요."},
+    {en:"I kept my passport in an easy-to-reach pocket.", ko:"여권을 꺼내기 쉬운 주머니에 넣어두었어요."},
+    {en:"I grabbed a quick snack before boarding.", ko:"탑승 전에 간단히 간식을 먹었어요."},
+    {en:"Boarding started right on time.", ko:"탑승이 제시간에 시작됐어요."},
+    {en:"I listened for announcements near the gate.", ko:"게이트 근처에서 안내 방송을 들었어요."},
+    {en:"I used a carry-on to travel light.", ko:"가볍게 들고 탈 수화물만 가져갔어요."},
+    {en:"I kept my phone charged for the e-ticket.", ko:"전자 탑승권을 위해 휴대폰을 충전해 두었어요."},
+    {en:"I checked the baggage weight limit.", ko:"수하물 무게 제한을 확인했어요."},
+    {en:"I asked for a window seat politely.", ko:"창가 자리를 정중히 부탁했어요."},
+    {en:"I watched the planes take off and land.", ko:"비행기 이륙과 착륙을 구경했어요."},
+    {en:"I followed the signs to immigration.", ko:"표지판을 따라 출입국 심사로 갔어요."},
+    {en:"I filled out the arrival form carefully.", ko:"입국 신고서를 꼼꼼히 작성했어요."},
+    {en:"I kept my valuables in my personal bag.", ko:"귀중품은 개인 가방에 보관했어요."},
+    {en:"I checked the airport map to find my gate.", ko:"공항 지도를 보고 게이트를 찾았어요."},
+    {en:"I stretched my legs before the long flight.", ko:"긴 비행 전 다리를 쭉 폈어요."},
+    {en:"I’m glad the flight departed smoothly.", ko:"비행기가 순조롭게 출발해서 다행이에요."},
+  ];
+}
+function lines_hotel(){
+  return [
+    {en:"I confirmed my reservation before the trip.", ko:"여행 전에 예약을 확인했어요."},
+    {en:"I asked for early check-in politely.", ko:"정중하게 얼리 체크인을 요청했어요."},
+    {en:"I showed my ID and booking number at the desk.", ko:"데스크에서 신분증과 예약번호를 보여줬어요."},
+    {en:"I requested a quiet room on a higher floor.", ko:"층고가 높은 조용한 방을 부탁했어요."},
+    {en:"I checked the room for cleanliness.", ko:"객실 청결 상태를 확인했어요."},
+    {en:"I tested the key card and safe.", ko:"키 카드와 금고를 점검했어요."},
+    {en:"I asked about breakfast hours.", ko:"아침 식사 시간을 물어봤어요."},
+    {en:"I set the air conditioner to a comfortable level.", ko:"에어컨을 편안한 온도로 설정했어요."},
+    {en:"I used the luggage rack to keep things tidy.", ko:"짐 정리를 위해 러기지랙을 사용했어요."},
+    {en:"I called the front desk for extra towels.", ko:"수건을 더 달라고 프런트에 전화했어요."},
+    {en:"I planned tomorrow’s route with the hotel map.", ko:"호텔 지도로 내일 동선을 계획했어요."},
+    {en:"I charged my devices near the desk.", ko:"책상 근처에서 기기를 충전했어요."},
+    {en:"I put the ‘Do Not Disturb’ sign on the door.", ko:"문에 '객실 정중' 표지를 걸었어요."},
+    {en:"I checked out the gym and pool hours.", ko:"헬스장과 수영장 운영 시간을 확인했어요."},
+    {en:"I kept my passport in the room safe.", ko:"여권을 객실 금고에 보관했어요."},
+    {en:"I requested a late checkout if possible.", ko:"가능하면 레이트 체크아웃을 요청했어요."},
+    {en:"I thanked the staff for their help.", ko:"직원들의 도움에 감사 인사를 했어요."},
+    {en:"I left a small tip for housekeeping.", ko:"하우스키핑을 위해 작은 팁을 남겼어요."},
+    {en:"I checked out smoothly at the front desk.", ko:"프런트에서 수월하게 체크아웃했어요."},
+    {en:"I saved the hotel address on my phone.", ko:"호텔 주소를 휴대폰에 저장해 두었어요."},
+    {en:"I’m happy the room met my needs.", ko:"객실이 기대에 맞아서 만족했어요."},
+  ];
+}
+
+/* ====== 범용/다수 카테고리 템플릿 ======
+   - title(주제명)을 자연스럽게 끼워 넣되, 실제 상황 맥락으로 21문장 구성
+*/
+function lines_generic(title){
+  const t = title;
+  return [
+    {en:`I spent some time on ${t} today.`, ko:`오늘 ${t}에 시간을 좀 썼어요.`},
+    {en:`I tried to keep ${t} simple and practical.`, ko:`${t}는 실용적으로, 간단히 해봤어요.`},
+    {en:`Honestly, ${t} took longer than I expected.`, ko:`솔직히 ${t}가 생각보다 오래 걸렸어요.`},
+    {en:`I finally made progress with ${t}.`, ko:`드디어 ${t}에서 진전이 있었어요.`},
+    {en:`I set one clear goal for ${t}.`, ko:`${t}를 위해 명확한 목표 하나를 정했어요.`},
+    {en:`I checked a few details related to ${t}.`, ko:`${t}와 관련된 몇 가지 디테일을 점검했어요.`},
+    {en:`I talked about ${t} with a friend briefly.`, ko:`${t}에 대해 친구와 잠깐 이야기했어요.`},
+    {en:`I learned a small tip that helps with ${t}.`, ko:`${t}에 도움이 되는 작은 팁을 배웠어요.`},
+    {en:`I wrote down notes to improve ${t} next time.`, ko:`다음에 ${t}를 더 잘하려고 메모를 남겼어요.`},
+    {en:`I kept my expectations realistic for ${t}.`, ko:`${t}에 대한 기대치를 현실적으로 잡았어요.`},
+    {en:`I planned a simple routine around ${t}.`, ko:`${t}를 위한 간단한 루틴을 세웠어요.`},
+    {en:`I found a tool that makes ${t} easier.`, ko:`${t}를 더 쉽게 하는 도구를 찾았어요.`},
+    {en:`I practiced a few times to get used to ${t}.`, ko:`${t}에 익숙해지려고 몇 번 연습했어요.`},
+    {en:`I checked my progress on ${t}.`, ko:`${t} 진행 상황을 확인했어요.`},
+    {en:`I fixed a small issue that blocked ${t}.`, ko:`${t}를 막던 작은 문제를 해결했어요.`},
+    {en:`I adjusted my schedule to fit ${t}.`, ko:`${t}에 맞게 일정을 조정했어요.`},
+    {en:`I asked for feedback about ${t}.`, ko:`${t}에 대한 피드백을 요청했어요.`},
+    {en:`I kept ${t} consistent but flexible.`, ko:`${t}를 꾸준히 하되 유연하게 했어요.`},
+    {en:`I wrapped up the basics of ${t}.`, ko:`${t}의 기본을 마무리했어요.`},
+    {en:`I set a reminder to revisit ${t} soon.`, ko:`곧 ${t}를 다시 보려고 알림을 설정했어요.`},
+    {en:`I’m glad ${t} is moving in the right direction.`, ko:`${t}가 좋은 방향으로 가서 다행이에요.`},
+  ];
+}
+
+/* ====== 카테고리 라우팅 ====== */
+function build21ByCategory(cat, title){
+  switch(cat){
+    case 'coffee': return lines_coffee();
+    case 'airport': return lines_airport();
+    case 'hotel': return lines_hotel();
+    // 아래는 간결화를 위해 대부분 generic에 title 주입.
+    // 필요 시 같은 방식으로 카테고리 전용 세트를 추가해 주세요.
+    default: return lines_generic(title);
+  }
+}
+
+/* ====== bank21(title) → TOPIC_BANKS 사용 ====== */
+function bank21(title){
+  const override = TOPIC_BANKS[title];
+  if (Array.isArray(override) && override.length === 21) {
+    return override; // 완전 커스텀 21문장
+  }
+  // category 문자열이면 해당 전용/범용 세트 생성
+  const cat = (typeof override === 'string' && override) ? override : 'generic';
+  return build21ByCategory(cat, title);
+}
+
+/* ====== Per-day state ====== */
+function ensureDayState(day){
+  const k='Day'+day;
+  if(!prog[k]){ prog[k]={ comboScore:null, done:false, bankOffset:0 }; }
+  if(typeof prog[k].bankOffset!=='number') prog[k].bankOffset=0;
+  return prog[k];
+}
+
+/* ====== TTS ====== */
+let voices=[]; const voiceSelect=document.getElementById('voiceSelect');
+function loadVoices(){ try{ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }catch(e){ voices=[]; } }
+function sortVoices(list){ return [...list].sort((a,b)=>{ const score=v=>(/en[-_]?US/i.test(v.lang)?2:/^en/i.test(v.lang)?1:0); const ds=score(b)-score(a); return ds||((a.name||'').localeCompare(b.name||'')); }); }
+function populateVoiceSelect(){ voiceSelect.innerHTML=''; if(!voices.length){ const o=document.createElement('option'); o.textContent='(no voices)'; o.value=''; voiceSelect.appendChild(o); voiceSelect.disabled=true; return; } voiceSelect.disabled=false; const sorted=sortVoices(voices); for(const v of sorted){ const o=document.createElement('option'); o.value=v.voiceURI||v.name||''; o.textContent=`${v.name} — ${v.lang}`; voiceSelect.appendChild(o);} const byURI=sorted.find(v=>(v.voiceURI||'')===(user.voiceURI||'')); if(byURI) voiceSelect.value=byURI.voiceURI||''; else { const enUS=sorted.find(v=>/en[-_]?US/i.test(v.lang)); voiceSelect.value=(enUS&&(enUS.voiceURI||''))||(sorted[0].voiceURI||''); user.voiceURI=voiceSelect.value; saveUser(user);} }
+async function waitForVoices(timeout=2000){ if(!('speechSynthesis' in window)) return; loadVoices(); if(voices.length) return; await new Promise(res=>{ const t0=Date.now(); function h(){ loadVoices(); if(voices.length||Date.now()-t0>timeout){ speechSynthesis.removeEventListener('voiceschanged',h); res(); } } speechSynthesis.addEventListener('voiceschanged',h); setTimeout(h,timeout); }); }
+if('speechSynthesis' in window){ loadVoices(); window.speechSynthesis.addEventListener('voiceschanged', ()=>{ loadVoices(); populateVoiceSelect(); }); }
+function resumeTTS(){ try{ if('speechSynthesis' in window && speechSynthesis.paused) speechSynthesis.resume(); }catch(_){} }
+window.addEventListener('pointerdown', resumeTTS, { once:true }); document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') resumeTTS(); });
+function getVoice(){ if(!voices.length) return null; if(user.voiceURI){ const v=voices.find(v=>(v.voiceURI||'')===user.voiceURI); if(v) return v; } return voices.find(v=>/en[-_]?US/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang))||voices[0]||null; }
+voiceSelect.addEventListener('change', ()=>{ user.voiceURI=voiceSelect.value||''; saveUser(user); toast('TTS 보이스를 변경했어요.'); });
+function speakOnce(text){ return new Promise(async (resolve)=>{ if(!('speechSynthesis' in window)) return resolve(); await waitForVoices(); resumeTTS(); const utt=new SpeechSynthesisUtterance(text); utt.lang=user.lang||'en-US'; utt.rate=user.ttsRate||1; const v=getVoice(); if(v){ utt.voice=v; utt.lang=v.lang||utt.lang; } utt.onend=()=>resolve(); try{ if(speechSynthesis.speaking) speechSynthesis.cancel(); }catch(_){} setTimeout(()=>speechSynthesis.speak(utt),0); }); }
+async function speakQueue(arr,onStart,onEnd){ try{ onStart&&onStart(); for(const s of arr){ await speakOnce(s); } } finally{ onEnd&&onEnd(); } }
+function speak(text){ return speakQueue([text]); }
+
+/* ====== STT & Scoring ====== */
+function createRecognizer(onResult,onEnd,{continuous=false,interim=false}={}){ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast('이 기기에서는 음성 인식이 제한됩니다. (Android Chrome 권장)'); return null; } const rec=new SR(); rec.lang='en-US'; rec.interimResults=!!interim; rec.continuous=!!continuous; rec.maxAlternatives=1; rec.onresult=(e)=>onResult&&onResult(e); rec.onerror=(e)=>{/* 일시 오류는 onend에서 복구 */}; rec.onend=()=>onEnd&&onEnd(); return rec; }
+function levenshtein(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) d[i][0]=i; for(let j=0;j<=n;j++) d[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const c=a[i-1]===b[j-1]?0:1; d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);} } return d[m][n]; }
+function norm(s){ return s.toLowerCase().replace(/[^a-z\s]/g,'').replace(/\s+/g,' ').trim(); }
+function scoreSentence(ref,hyp){ const A=norm(ref),B=norm(hyp); if(!B) return 0; const dist=levenshtein(A,B); const max=Math.max(A.length,B.length)||1; return Math.max(0, Math.round((1-dist/max)*100)); }
+function tokenize(s){ return norm(s).split(' ').filter(Boolean); }
+function wordDiffFeedback(ref, hyp){ const R=tokenize(ref), H=tokenize(hyp); if(!H.length) return ['조금 더 크게, 또렷하게 말해줘요!']; const setH=new Set(H); const tips=[]; const missing=R.filter(w=>!setH.has(w)); if(missing.length>=2) tips.push('단어 몇 개 빠졌어요 (끝까지 말하기).'); if(H.length <= Math.max(2, Math.floor(R.length*0.6))) tips.push('조금 더 길게, 전체 문장을 말해보세요.'); if(tips.length<=1) tips.push('억양을 살려 자연스럽게 읽어보세요.'); return tips.slice(0,2); }
+
+/* ====== UI Refs ====== */
+const tabs=document.querySelectorAll('.tab');
+const views={home:document.getElementById('home'),challenge:document.getElementById('challenge'),progress:document.getElementById('progress')};
+const elDayNum=document.getElementById('dayNum'); const elTitle=document.getElementById('dayTitle'); const elLines=document.getElementById('lines');
+const elAvg=document.getElementById('avgScore'); const elMeter=document.getElementById('meterBar');
+const btnRetry=document.getElementById('btnRetry'); const btnReset=document.getElementById('btnReset');
+
+for (const t of tabs){ t.addEventListener('click',()=>{ tabs.forEach(b=>b.classList.remove('active')); t.classList.add('active');
+  Object.values(views).forEach(v=>v.style.display='none'); views[t.dataset.view].style.display='';
+  if(t.dataset.view==='challenge') renderChallenge100();
+  if(t.dataset.view==='progress') renderHistory();
+}); }
+
+/* ====== Toast ====== */
+let toastTimer; function toast(msg){ clearTimeout(toastTimer); const el=document.getElementById('toast'); const m=document.getElementById('toastMsg'); m.textContent=msg; el.style.display='flex'; toastTimer=setTimeout(()=>el.style.display='none', 1800); }
+
+/* ====== TTS rate ====== */
+const elRate=document.getElementById('rate');
+elRate.textContent=(user.ttsRate||1).toFixed(1)+'x';
+document.getElementById('rateDown').onclick=()=>{ user.ttsRate=Math.max(.6, Math.round(((user.ttsRate||1)-.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
+document.getElementById('rateUp').onclick=()=>{ user.ttsRate=Math.min(1.4, Math.round(((user.ttsRate||1)+.1)*10)/10); elRate.textContent=user.ttsRate.toFixed(1)+'x'; saveUser(user); };
+
+/* ====== Render Today (fixed 21 bank, 3 lines per view) ====== */
+function renderToday(){
+  const day=getTodayDay(); const state=ensureDayState(day);
+  const title=TITLES[day-1]; const bank = bank21(title);
+  const start = (state.bankOffset||0) % 21;
+  const lines = [0,1,2].map(i=> bank[(start+i)%21]);
+
+  elDayNum.textContent=day; elTitle.textContent=title; elLines.innerHTML='';
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const sttSupported=!!SR;
+
+  lines.forEach((pair)=>{
+    const text = pair.en;
+    const line=document.createElement('div'); line.className='line';
+
+    const pEn=document.createElement('p'); pEn.textContent=text; line.appendChild(pEn);
+    const pKo=document.createElement('p'); pKo.textContent=pair.ko; pKo.className='ko'; line.appendChild(pKo);
+
+    const row=document.createElement('div'); row.className='row';
+
+    const btnPlay=document.createElement('button'); btnPlay.className='btn'; btnPlay.textContent='▶︎ 듣기';
+    btnPlay.onclick=()=>{ speak(text); };
+
+    const btnRec=document.createElement('button'); btnRec.className='btn pri'; btnRec.textContent='● 말하기(연습)';
+    const btnStop=document.createElement('button'); btnStop.className='btn'; btnStop.textContent='■ 중지'; btnStop.disabled=true;
+    if(!sttSupported){ btnRec.disabled=true; btnStop.disabled=true; btnRec.title='이 기기에서는 음성 인식이 제한됩니다.'; }
+
+    const scoreBox=document.createElement('span'); scoreBox.className='score'; scoreBox.style.marginLeft='6px';
+    const fbBox=document.createElement('span'); fbBox.className='feedback'; fbBox.textContent='';
+
+    // 연습: 반드시 사용자가 중지 눌러야 종료(자동 종료시 재시작)
+    let rec=null, recActive=false, hypAccum='';
+    function setRecUI(active){ if(active){ btnRec.classList.add('rec'); btnRec.textContent='● 듣는 중…(연습)'; } else { btnRec.classList.remove('rec'); btnRec.textContent='● 말하기(연습)'; } }
+    function startLineRec(){
+      rec = createRecognizer((e)=>{
+        for(let i=e.resultIndex;i<e.results.length;i++){
+          const r=e.results[i];
+          if(r.isFinal){ hypAccum += (hypAccum?' ':'') + r[0].transcript; }
+        }
+      }, ()=>{
+        if(recActive){ try{ rec=null; setTimeout(startLineRec, 200); }catch(_){} }
+        else {
+          const s=scoreSentence(text,hypAccum);
+          const fb = (s===100) ? ['잘했어요!'] : wordDiffFeedback(text,hypAccum);
+          scoreBox.textContent=`연습 점수 ${s}%`;
+          fbBox.textContent=fb.join(' · ');
+          btnRec.disabled=false; btnStop.disabled=true; btnStop.textContent='■ 중지';
+          setRecUI(false);
+        }
+      }, {continuous:true, interim:false});
+      if(rec){ try{ rec.start(); }catch(_){ toast('마이크 시작 실패. 권한/다른 앱 점검 후 다시 시도해 주세요.'); } }
+    }
+    btnRec.onclick=()=>{ if(rec||!sttSupported) return; recActive=true; hypAccum=''; btnRec.disabled=true; btnStop.disabled=false; setRecUI(true); toast('말해 보세요… (연습)'); startLineRec(); };
+    btnStop.onclick=()=>{ if(!rec) return; recActive=false; try{ rec.stop(); }catch(_){} btnStop.disabled=true; btnStop.textContent='중지됨'; };
+
+    row.appendChild(btnPlay); row.appendChild(btnRec); row.appendChild(btnStop); row.appendChild(scoreBox);
+    line.appendChild(row); line.appendChild(fbBox);
+    elLines.appendChild(line);
+  });
+
+  // 3문장 연속 듣기 & 말하기(점수 반영)
+  const allRow=document.createElement('div'); allRow.className='row';
+
+  const btnAll=document.createElement('button');
+  btnAll.className='btn';
+  btnAll.textContent='▶︎ 3문장 연속 듣기';
+  btnAll.onclick=()=> speakQueue(lines.map(x=>x.en),
+    ()=>{btnAll.disabled=true; btnAll.textContent='▶︎ 재생 중…';},
+    ()=>{btnAll.disabled=false; btnAll.textContent='▶︎ 3문장 연속 듣기';});
+  allRow.appendChild(btnAll);
+
+  const btnRecAll=document.createElement('button');
+  btnRecAll.className='btn pri';
+  btnRecAll.textContent='● 3문장 연속 말하기(점수 반영)';
+  if(!sttSupported){ btnRecAll.disabled=true; btnRecAll.title='이 기기에서는 음성 인식을 지원하지 않습니다.'; }
+  btnRecAll.onclick=()=> practiceReciteOneShot_final(lines.map(x=>x.en), btnRecAll);
+  allRow.appendChild(btnRecAll);
+
+  elLines.appendChild(allRow);
+
+  updateProgress();
+}
+
+/* ====== Progress ====== */
+function updateProgress(){
+  const day=getTodayDay(); const d=ensureDayState(day);
+  const avg = (typeof d.comboScore==='number') ? d.comboScore : 0;
+  elAvg.textContent = avg>0 ? (avg+'%') : '—';
+  elMeter.style.width = `${avg}%`;
+  const pass = avg>=80;
+  const elDone=document.getElementById('markDone');
+  elDone.disabled=!pass; elDone.textContent=pass?'✔ 조건 충족! 오늘 완료하기':'✔ 오늘 완료로 표시';
+  elDone.onclick=()=>{ if(pass){ markDone(getTodayDay(),avg); } };
+}
+
+function markDone(day,avg){
+  const k='Day'+day; const title=TITLES[day-1];
+  const now=todayKey();
+  prog[k] = { ...(prog[k]||{}), comboScore:avg, done:true };
+  prog.lastDone=k;
+  const prev='Day'+(day-1), prevStreak=prog.streak||0;
+  prog.streak = (day>1 && prog[prev]&&prog[prev].done)? prevStreak+1 : 1;
+  if(!Array.isArray(prog._history)) prog._history=[];
+  prog._history = prog._history.filter(h=>h.day!==day);
+  prog._history.push({ day, date: now, title, avg });
+  saveProg(prog);
+  document.getElementById('streak').textContent=prog.streak;
+  document.getElementById('lastDone').textContent=prog.lastDone;
+  toast('✅ 오늘 학습 완료! 기록에 저장했어요.');
+  renderChallenge100(); renderHistory();
+}
+
+/* ====== 3문장 연속 말하기(점수 반영) ====== */
+function concatenateLines(lines){ return lines.join(' '); }
+function practiceReciteOneShot_final(lines, triggerBtn){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast('이 브라우저는 음성 인식을 지원하지 않아요.'); return; }
+
+  const origText = triggerBtn ? triggerBtn.textContent : '';
+  function restoreTrigger(){
+    if(triggerBtn){
+      triggerBtn.classList.remove('rec');
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = origText || '● 3문장 연속 말하기(점수 반영)';
+    }
+  }
+
+  const wrap=document.createElement('div'); wrap.className='practice';
+  const box=document.createElement('div'); box.className='box';
+  const refs = lines.map((s,i)=>`${i+1}. ${s}`).join('\n');
+  box.innerHTML = `
+    <h3>🎤 3문장 연속 말하기 (점수 반영)</h3>
+    <div class="ref">아래 3문장을 한 번에 자연스럽게 말해 보세요.\n\n${refs}</div>
+    <div class="meta">
+      <button class="btn pri" id="btnStart">● 말하기 시작</button>
+      <button class="btn" id="btnStop" disabled>■ 중지</button>
+      <span class="small">여러 번 시도 가능. <b>닫기</b>를 누른 시점의 점수가 반영됩니다.</span>
     </div>
-  </main>
+    <div class="result" id="resultBox" style="display:none">
+      <div>점수: <b id="sumScore">—</b></div>
+      <div class="feedback" id="sumFb"></div>
+      <div style="margin-top:8px"><button class="btn" id="btnClosePanel">닫기</button></div>
+    </div>
+  `;
+  wrap.appendChild(box); document.body.appendChild(wrap);
 
-  <script>
-    const TITLES = window.TITLES;
-    const BANKS = window.TOPIC_BANKS;
+  const btnStart = box.querySelector('#btnStart');
+  const btnStop  = box.querySelector('#btnStop');
+  const resultBox= box.querySelector('#resultBox');
+  const sumScore = box.querySelector('#sumScore');
+  const sumFb    = box.querySelector('#sumFb');
 
-    let currentDayIndex = 0;
-    let sentenceIndex = 0;
-    let score = 0;
+  let rec=null, finalText='', lastScore=null, lastFb='';
+  let recActive=false;
+  let canStart=true;
 
-    // 한국시간 기준 자정마다 새로운 주제로 변경
-    function getKSTDate() {
-      const now = new Date();
-      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const kst = new Date(utc + (9 * 60 * 60000));
-      return kst;
+  function resetStartUI(){ btnStart.classList.remove('rec'); btnStart.textContent='● 말하기 시작'; btnStart.disabled=false; }
+  function startRecognizer(){
+    rec = createRecognizer(onResult, onEnd, {continuous:true, interim:false});
+    if(rec){ try{ rec.start(); }catch(_){ canStart=true; resetStartUI(); btnStop.disabled=true; toast('마이크 시작 실패. 다시 시도해 주세요.'); } }
+    else { canStart=true; resetStartUI(); btnStop.disabled=true; }
+  }
+
+  function onResult(e){
+    for (let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i];
+      if(r.isFinal) finalText += (finalText?' ':'') + r[0].transcript;
     }
+  }
+  function onEnd(){
+    if(recActive){ try{ rec=null; setTimeout(startRecognizer, 200); }catch(_){}; return; }
+    const refAll = concatenateLines(lines);
+    const sc = scoreSentence(refAll, finalText);
+    const fb = (sc===100) ? ['잘했어요!'] : wordDiffFeedback(refAll, finalText);
 
-    function getDayIndex() {
-      const start = new Date("2025-01-01T00:00:00+09:00"); // 기준일
-      const now = getKSTDate();
-      const diff = Math.floor((now - start) / (1000*60*60*24));
-      return diff % TITLES.length;
+    lastScore = isNaN(sc)? null : sc; lastFb = fb.join(' · ');
+    sumScore.textContent = (lastScore==null)? '—' : (lastScore + '%');
+    sumFb.textContent = lastFb; resultBox.style.display = '';
+
+    btnStop.disabled = true; btnStop.textContent = '중지됨';
+    resetStartUI(); rec=null; setTimeout(()=>{ canStart=true; }, 200);
+  }
+
+  btnStart.onclick = ()=>{
+    if(!canStart || recActive) return;
+    canStart=false; finalText='';
+    recActive=true;
+    if(triggerBtn){ triggerBtn.classList.add('rec'); triggerBtn.disabled=true; triggerBtn.textContent='● 연속 말하기 중…'; }
+    btnStart.classList.add('rec'); btnStart.textContent='● 듣는 중…'; btnStart.disabled=true;
+    btnStop.disabled=false; btnStop.textContent='■ 중지';
+    setTimeout(startRecognizer, 150);
+    toast('한 번에 3문장을 말해 보세요…');
+  };
+
+  btnStop.onclick = ()=>{
+    if(!recActive) return;
+    recActive=false;
+    if(rec){ try{ rec.stop(); }catch(_){} }
+    btnStop.disabled = true; btnStop.textContent = '중지됨';
+  };
+
+  box.querySelector('#btnClosePanel').onclick = ()=>{
+    try{ if(recActive && rec){ recActive=false; rec.abort(); } }catch(_){}
+    document.body.removeChild(wrap);
+    restoreTrigger();
+    if(lastScore!=null){
+      const day=getTodayDay(); const d=ensureDayState(day);
+      d.comboScore = lastScore; saveProg(prog);
+      updateProgress();
+      toast(`점수 ${lastScore}% 반영 완료`);
+    } else {
+      toast('점수 없이 닫았습니다.');
     }
+  };
+}
 
-    function loadTopic() {
-      currentDayIndex = getDayIndex();
-      const topic = TITLES[currentDayIndex];
-      document.getElementById("topicTitle").innerText = topic;
-      sentenceIndex = 0;
-      renderSentences();
-    }
+/* ====== 100-Day Calendar & History ====== */
+function renderChallenge100(){
+  const grid=document.getElementById('challenge100'); grid.innerHTML='';
+  const cur=getTodayDay();
+  for(let i=1;i<=100;i++){
+    const cell=document.createElement('div'); cell.className='day'; cell.textContent=i;
+    const k='Day'+i; if(prog[k] && prog[k].done){ cell.classList.add('done'); cell.style.borderColor='#3b82f6'; }
+    if(i===cur){ cell.style.outline='2px solid #5b8cff'; cell.style.color='#e8eefc'; }
+    cell.title=k+(i===cur?' • today':'');
+    cell.onclick=()=>{ prog._currentDay=i; saveProg(prog); tabs.forEach(b=>{ if(b.dataset.view==='home'){ b.click(); }}); renderToday(); };
+    grid.appendChild(cell);
+  }
+}
 
-    function renderSentences() {
-      const topic = TITLES[currentDayIndex];
-      const bank = BANKS[topic] || [];
-      const container = document.getElementById("sentences");
-      container.innerHTML = "";
+function renderHistory(){
+  const box=document.getElementById('history');
+  let list = Array.isArray(prog._history) ? [...prog._history] : [];
+  if (!list.length){
+    list = Object.entries(prog)
+      .filter(([k,v])=>/^Day\d+$/.test(k) && v && typeof v.comboScore==='number')
+      .map(([k,v])=>({ day: parseInt(k.slice(3)), date: '', title: TITLES[parseInt(k.slice(3))-1], avg: v.comboScore }));
+  }
+  list.sort((a,b)=> a.day - b.day);
+  if(!list.length){ box.innerHTML='<div class="small">아직 기록이 없습니다.</div>'; return; }
+  const frag=document.createDocumentFragment();
+  list.forEach(item=>{
+    const div=document.createElement('div'); div.className='line';
+    const dateTxt = item.date ? ` <span class="small">(${item.date})</span>` : '';
+    div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+      <b>Day ${item.day} — ${item.title}${dateTxt}</b><span class="score">${item.avg}%</span></div>`;
+    frag.appendChild(div);
+  });
+  box.innerHTML=''; box.appendChild(frag);
+}
 
-      const chunk = bank.slice(sentenceIndex, sentenceIndex+3);
-      chunk.forEach(s => {
-        const div = document.createElement("div");
-        div.className = "sentence";
-        div.innerHTML = `<b>${s.en}</b><br/>${s.ko}`;
-        container.appendChild(div);
-      });
+/* ====== Shortcuts ====== */
+btnRetry.onclick=()=>{
+  const day=getTodayDay(); const k='Day'+day; const st=ensureDayState(day);
+  st.comboScore=null; st.done=false;
+  st.bankOffset = ((st.bankOffset||0) + 3) % 21;
+  saveProg(prog);
+  renderToday(); updateProgress();
+  toast('🔁 다음 3문장으로 바꿨어요.');
+};
+btnReset.onclick=()=>{ if(!confirm('정말 전체 데이터를 초기화할까요? (취소 불가)')) return;
+  localStorage.removeItem(LS_PROGRESS); prog=loadProg();
+  prog._startedAt=todayKey(); prog._currentDay=1; prog._lastDate=todayKey(); prog._history=[];
+  saveProg(prog);
+  renderToday(); renderChallenge100(); renderHistory(); updateProgress(); toast('🧹 모든 데이터가 초기화됐어요.');
+};
 
-      sentenceIndex += 3;
-      if (sentenceIndex >= bank.length) sentenceIndex = 0;
-    }
+/* ====== Auto Day Rollover (KST) ====== */
+function autoDayRolloverTick(){
+  const nowKey = todayKey();
+  if(prog._lastDate !== nowKey){
+    prog._lastDate = nowKey;
+    prog._currentDay = computeDayFromStart();
+    const k='Day'+prog._currentDay;
+    if(!prog[k]) prog[k]={ comboScore:null, done:false, bankOffset:0 };
+    saveProg(prog);
+    renderToday(); renderChallenge100(); updateProgress();
+    toast('📅 새로운 날이 시작되어 주제를 바꿨어요!');
+  }
+}
+setInterval(autoDayRolloverTick, 60*1000);
+autoDayRolloverTick();
 
-    function updateScore(points) {
-      score += points;
-      document.getElementById("scoreChip").innerText = `점수: ${score}`;
-      if (score >= 80) {
-        document.getElementById("successChip").style.display = "inline-block";
-      } else {
-        document.getElementById("successChip").style.display = "none";
-      }
-    }
+/* ====== PWA ====== */
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
 
-    document.getElementById("retryBtn").addEventListener("click", () => {
-      renderSentences();
-      updateScore(10); // 예시: 문장 묶음 볼 때마다 10점 추가
-    });
-
-    // 초기 로드
-    loadTopic();
-  </script>
+/* ====== Boot ====== */
+function initHeaderKPI(){ document.getElementById('streak').textContent = prog.streak||0; document.getElementById('lastDone').textContent = prog.lastDone||'—'; }
+function boot(){ initHeaderKPI(); renderToday(); renderChallenge100(); updateProgress(); }
+boot();
+</script>
 </body>
 </html>
