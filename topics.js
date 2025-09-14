@@ -1,3 +1,7 @@
+Array.isArray(TOPICS) && TOPICS.length   // → (예: 10, 20, 100 ...)
+Array.isArray(TITLES) && TITLES.length   // → TOPICS 개수와 동일해야 정상
+typeof bank21                            // → "function"
+TOPIC_BANKS[TITLES[0]].length            // → 21 이어야 정상
 // Fully handcrafted topics.js — 100 topics × 21 sentences each
 (function(){
   window.TITLES = [
